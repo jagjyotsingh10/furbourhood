@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/*
+ * Furbourhood brand tokens.
+ * Contrast rules (WCAG AA):
+ *  - navy is the only text colour on white, cloud, sky, mint and coral fills.
+ *  - sky, mint and coral are fills only; never use them as text colours.
+ *  - muted text is --slate (#4A5D70), 6.6:1 on white.
+ */
+:root {
+  /* brand */
+  --navy: #203b56;
+  --sky: #74c7ec;
+  --mint: #a8e6cf;
+  --coral: #ff927d;
+  --cloud: #f7fbff;
+  --sky-tint: #e3f4fc;
+  --mint-tint: #e5f7ef;
+  --coral-tint: #ffeae5;
+  --slate: #4a5d70;
+
+  /* shadcn semantic variables */
+  --background: var(--cloud);
+  --foreground: var(--navy);
+  --card: #ffffff;
+  --card-foreground: var(--navy);
+  --popover: #ffffff;
+  --popover-foreground: var(--navy);
+  --primary: var(--navy);
+  --primary-foreground: #ffffff;
+  --secondary: var(--sky);
+  --secondary-foreground: var(--navy);
+  --muted: #edf3f8;
+  --muted-foreground: var(--slate);
+  --accent: var(--sky-tint);
+  --accent-foreground: var(--navy);
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #d5e1eb;
+  --input: #7a90a6; /* 3.3:1 on white, meets non-text contrast */
+  --ring: var(--navy);
+  --radius: 12px;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-sky: var(--sky);
+  --color-mint: var(--mint);
+  --color-coral: var(--coral);
+  --color-cloud: var(--cloud);
+  --color-sky-tint: var(--sky-tint);
+  --color-mint-tint: var(--mint-tint);
+  --color-coral-tint: var(--coral-tint);
+  --color-slate: var(--slate);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* 16px cards, 12px buttons and inputs */
+  --radius-card: 16px;
+  --radius-control: var(--radius);
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: var(--radius);
+  --radius-xl: 16px;
+
+  /* soft shadow, cards only */
+  --shadow-card: 0 1px 2px rgb(32 59 86 / 0.06), 0 4px 14px rgb(32 59 86 / 0.07);
+
+  --font-heading: "Nunito", ui-rounded, system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

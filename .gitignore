@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Rover/UX reference screenshots: never commit
+design-reference/
