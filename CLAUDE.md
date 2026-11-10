@@ -3,8 +3,8 @@
 Local pet-care marketplace for Windsor-Essex, Ontario. University capstone MVP.
 A React web app that will later be packaged for Android with Capacitor.
 
-Current phase: Supabase backend connected (email log-in, providers, pets, bookings) and pet management. Next:
-booking request flow, provider tools.
+Current phase: Supabase backend connected (email log-in, providers, pets, bookings), pet management and booking
+requests (request and withdraw). Next: provider tools (accept / decline), Stripe test mode.
 
 ## Commands
 - `npm run dev` starts the dev server
@@ -23,6 +23,7 @@ booking request flow, provider tools.
 
 ## Backend (Supabase)
 - Schema and security rules: `supabase/migrations/` (run in order in the Supabase SQL Editor). Demo providers: `supabase/seed.sql` (run after the migrations, before anyone signs up).
+- Booking totals are set by the database (`price_booking()` trigger in `0002_booking_requests.sql`) from the provider's rate: overnight services per night (min 1), others once per day. `src/lib/pricing.ts` shows the same estimate in the app; change both together. The app never sends a total.
 - Every table has Row Level Security. Owners only see their own pets and bookings; providers only see bookings sent to their listing; listings and reviews are readable by any signed-in user. Any new table needs RLS and policies in its migration.
 - Schema changes go in a new numbered migration file; never edit one that has already been run.
 - A trigger on `auth.users` creates the `profiles` row (role and name come from sign-up metadata) and gives new owners demo pets and bookings (`is_demo = true`).
@@ -84,5 +85,5 @@ labelled as demo data in code, in the database (`is_demo`) and on screen (`DemoN
 
 ## Routes
 `/` Welcome · `/signup?role=owner|provider` Sign up · `/login` Log in ·
-`/find` Find care · `/results` Results · `/providers/:id` Provider profile ·
+`/find` Find care · `/results` Results · `/providers/:id` Provider profile · `/providers/:id/request` Request booking ·
 `/pets` My pets · `/pets/new` Add pet · `/pets/:id/edit` Edit pet · `/bookings` Bookings · `/profile` Profile · `/styleguide` Style guide

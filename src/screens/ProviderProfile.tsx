@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { BedDouble, MapPin } from "lucide-react";
 
 import { AppBar } from "@/components/AppBar";
@@ -13,7 +13,7 @@ import { formatDate, formatPrice, plural } from "@/lib/format";
 import { lowestRate } from "@/lib/match";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useProvider } from "@/data/hooks";
-import { readSearch } from "@/lib/search";
+import { readSearch, toQuery } from "@/lib/search";
 import { NotFound } from "@/screens/NotFound";
 
 export function ProviderProfile() {
@@ -146,8 +146,8 @@ export function ProviderProfile() {
               {offer.unit}
             </p>
           )}
-          <Button size="lg" className="flex-1">
-            Request booking
+          <Button size="lg" className="flex-1" asChild>
+            <Link to={`/providers/${provider.id}/request${toQuery(search)}`}>Request booking</Link>
           </Button>
         </div>
       </div>

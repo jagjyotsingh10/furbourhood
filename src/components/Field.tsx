@@ -55,19 +55,24 @@ interface ChoiceGroupProps<T extends string> {
   options: Choice<T>[];
   value: T;
   onChange: (value: T) => void;
-  columns?: 2 | 4;
+  columns?: 1 | 2 | 4;
 }
+
+const COLUMNS = { 1: "grid-cols-1", 2: "grid-cols-2", 4: "grid-cols-4" } as const;
 
 /** Single choice as real radio buttons (arrow keys work), styled as tiles. Selected = sky fill, navy text. */
 export function ChoiceGroup<T extends string>({ name, legend, options, value, onChange, columns = 2 }: ChoiceGroupProps<T>) {
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="mb-1.5 text-sm font-semibold">{legend}</legend>
-      <div className={cn("grid gap-2", columns === 4 ? "grid-cols-4" : "grid-cols-2")}>
+      <div className={cn("grid gap-2", COLUMNS[columns])}>
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-control border border-input bg-card px-2 text-sm font-semibold has-checked:border-navy has-checked:bg-sky has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-input bg-card px-3 py-2 text-sm font-semibold has-checked:border-navy has-checked:bg-sky has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring",
+              columns === 1 ? "justify-between" : "justify-center",
+            )}
           >
             <input
               type="radio"

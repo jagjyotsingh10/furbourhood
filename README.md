@@ -48,7 +48,7 @@ React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · shadcn/ui (Radix) 
 Requires Node.js 20.19 or newer and a free [Supabase](https://supabase.com) project.
 
 1. **Set up the database.** In the Supabase dashboard, open **SQL Editor** and run, in order:
-   `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`.
+   `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, then `supabase/migrations/0002_booking_requests.sql`.
 2. **Connect the app.** Copy `.env.example` to `.env.local` and fill in the Project URL and the
    **publishable** key from **Project Settings → API Keys**. Never use the secret key here.
 3. **Run it:**
@@ -73,6 +73,7 @@ Other scripts: `npm run typecheck` and `npm run build`.
 | `/find` | Find care: service, pet, area and dates |
 | `/results` | Best match / All providers |
 | `/providers/:id` | Provider profile with skills and rates |
+| `/providers/:id/request` | Request booking: service, pet, dates and price estimate |
 | `/pets` | My pets and their care needs |
 | `/pets/new`, `/pets/:id/edit` | Add, edit or delete a pet |
 | `/bookings` | Bookings: Requested → Accepted → Paid → Completed |
@@ -106,7 +107,8 @@ makes it safe for the app to ship the publishable key.
 - [x] Brand system, component library and all owner screens
 - [x] Supabase backend: auth, providers, pets, bookings
 - [x] Add, edit and delete pets
-- [ ] Booking request and acceptance flow
+- [x] Booking requests: send, price check and withdraw
+- [ ] Provider tools: accept or decline requests
 - [ ] Stripe test-mode payments
 - [ ] Android build with Capacitor
 

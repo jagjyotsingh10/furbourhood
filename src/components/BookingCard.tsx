@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays } from "lucide-react";
 
@@ -6,17 +7,21 @@ import { StatusChip } from "@/components/Badges";
 import { Card } from "@/components/ui/card";
 import { serviceInfo } from "@/lib/catalog";
 import { formatDateRange, formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Booking, Pet, Provider } from "@/types";
 
 interface BookingCardProps {
   booking: Booking;
   provider: Provider;
   pet: Pet;
+  /** Extra controls under the card, e.g. withdraw a request. Sits above the card's stretched link. */
+  action?: ReactNode;
+  highlighted?: boolean;
 }
 
-export function BookingCard({ booking, provider, pet }: BookingCardProps) {
+export function BookingCard({ booking, provider, pet, action, highlighted = false }: BookingCardProps) {
   return (
-    <Card className="relative p-4">
+    <Card className={cn("relative p-4", highlighted && "ring-2 ring-mint")}>
       <div className="flex items-start gap-3">
         <Avatar name={provider.name} tone={provider.tone} />
         <div className="min-w-0 flex-1">
@@ -43,6 +48,7 @@ export function BookingCard({ booking, provider, pet }: BookingCardProps) {
         </span>
         <span className="font-bold">{formatPrice(booking.total)}</span>
       </div>
+      {action && <div className="relative z-10 mt-3">{action}</div>}
     </Card>
   );
 }

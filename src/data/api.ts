@@ -201,6 +201,38 @@ export async function countPetBookings(id: string): Promise<number> {
   return count ?? 0;
 }
 
+export interface BookingRequest {
+  providerId: string;
+  petId: string;
+  service: ServiceId;
+  start: string;
+  end: string;
+}
+
+/** Sends a request. The database fills in owner, status ('requested') and the total. */
+export async function requestBooking(request: BookingRequest): Promise<string> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .insert({
+      provider_id: request.providerId,
+      pet_id: request.petId,
+      service: request.service,
+      start_date: request.start,
+      end_date: request.end,
+    })
+    .select("id")
+    .single();
+  if (error) fail(error.message);
+  return (data as { id: string }).id;
+}
+
+/** Withdraws a booking that is still 'requested'. Fails if the provider has already replied. */
+export async function withdrawBooking(id: string): Promise<void> {
+  const { data, error } = await supabase.from("bookings").delete().eq("id", id).eq("status", "requested").select("id");
+  if (error) fail(error.message);
+  if (!data || data.length === 0) fail("This request can't be withdrawn any more. The provider may have replied.");
+}
+
 export interface BookingDetails {
   booking: Booking;
   provider: Provider;
