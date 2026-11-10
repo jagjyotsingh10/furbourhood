@@ -1,11 +1,12 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { BedDouble, CalendarCheck, CalendarX2, MapPin } from "lucide-react";
+import { CalendarCheck, CalendarX2, MapPin } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody, SectionTitle } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
+import { HostCapacity } from "@/components/HostCapacity";
 import { Rating, VerifiedBadge } from "@/components/Badges";
 import { LevelBadge } from "@/components/LevelBadge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
 import { formatDate, formatDateRange, formatPrice, plural } from "@/lib/format";
 import { blockedDuring, lowestRate } from "@/lib/match";
 import { ErrorState, LoadingState } from "@/components/States";
-import { useProvider } from "@/data/hooks";
+import { useHostSpace, useProvider } from "@/data/hooks";
 import { readSearch, toQuery } from "@/lib/search";
 import { NotFound } from "@/screens/NotFound";
 
@@ -23,6 +24,9 @@ export function ProviderProfile() {
   const [params] = useSearchParams();
   const { data: provider, loading, error, reload } = useProvider(id);
   const { role } = useAuth();
+  // Hooks run before any early return; the space query only matters when the owner searched for dates.
+  const searched = readSearch(params);
+  const space = useHostSpace(id, searched.from, searched.to);
 
   if (loading || error) {
     return (
@@ -34,7 +38,7 @@ export function ProviderProfile() {
   }
   if (!provider) return <NotFound />;
 
-  const search = readSearch(params);
+  const search = searched;
   const offer = provider.services.find((s) => s.service === search.service) ?? lowestRate(provider);
   // Only compare against dates the owner actually searched for, not the screen's defaults.
   const ownerDates = params.has("from") ? { from: search.from, to: search.to } : undefined;
@@ -70,12 +74,7 @@ export function ProviderProfile() {
                 Not available {clashes.map((d) => formatDateRange(d, d)).join(", ")}
               </p>
             ))}
-          {provider.hostCapacity && (
-            <p className="mt-4 flex w-full items-center justify-center gap-2 rounded-control bg-mint-tint px-3 py-2.5 text-sm font-semibold">
-              <BedDouble className="size-4 shrink-0" aria-hidden />
-              {provider.hostCapacity}
-            </p>
-          )}
+          <HostCapacity provider={provider} space={ownerDates ? space.data : undefined} className="mt-3 w-full" />
         </Card>
 
         <section className="flex flex-col gap-2">

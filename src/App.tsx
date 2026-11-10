@@ -6,6 +6,7 @@ import { RequireAuth } from "@/auth/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LogIn, SignUp } from "@/screens/Auth";
+import { LeaveReview } from "@/screens/LeaveReview";
 import { Availability } from "@/screens/Availability";
 import { Bookings } from "@/screens/Bookings";
 import { FindCare } from "@/screens/FindCare";
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/providers/:id" element={<ProviderProfile />} />
               <Route path="/providers/:id/request" element={<RequestBooking />} />
               <Route path="/bookings" element={<Bookings />} />
+              <Route path="/bookings/:id/review" element={<LeaveReview />} />
               <Route path="/pets" element={<MyPets />} />
               <Route path="/pets/new" element={<AddPet />} />
               <Route path="/pets/:id/edit" element={<EditPet />} />

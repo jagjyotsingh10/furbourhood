@@ -6,6 +6,7 @@ import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
+import { HostCapacity } from "@/components/HostCapacity";
 import { VerifiedBadge } from "@/components/Badges";
 import { ChoiceGroup, Field, FormError } from "@/components/Field";
 import { LevelBadge } from "@/components/LevelBadge";
@@ -15,20 +16,15 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { requestBooking } from "@/data/api";
-import { usePets, useProvider } from "@/data/hooks";
-import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
+import { useHostSpace, usePets, useProvider } from "@/data/hooks";
+import { HOSTED_SERVICES, NEED_LABELS, serviceInfo } from "@/lib/catalog";
 import { formatDateRange, formatPrice, plural, todayISO } from "@/lib/format";
 import { blockedDuring, matchProvider } from "@/lib/match";
 import { bookingLength, estimatePrice, MAX_BOOKING_DAYS } from "@/lib/pricing";
 import { readSearch } from "@/lib/search";
+import type { BookingsNotice } from "@/screens/Bookings";
 import { NotFound } from "@/screens/NotFound";
 import type { ServiceId } from "@/types";
-
-/** State handed to the Bookings screen so it can confirm the request was sent. */
-export interface RequestSentState {
-  requestedFrom: string;
-  bookingId: string;
-}
 
 export function RequestBooking() {
   const { id = "" } = useParams();
@@ -43,6 +39,8 @@ export function RequestBooking() {
   const [petId, setPetId] = useState(search.petId);
   const [from, setFrom] = useState(search.from);
   const [to, setTo] = useState(search.to);
+  // Space at the host's home on these dates (By-law 8156); refetched when the dates change.
+  const space = useHostSpace(id, from, to >= from ? to : from);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -86,8 +84,17 @@ export function RequestBooking() {
   const today = todayISO();
 
   const clashes = blockedDuring(p, from, to);
+  const hosted = offer ? HOSTED_SERVICES.includes(offer.service) : false;
+  const noRoom =
+    hosted && pet && space.data
+      ? pet.species === "Dog"
+        ? space.data.dogsLeft === 0
+        : space.data.catsLeft === 0
+      : false;
   const dateError =
-    clashes.length > 0
+    noRoom && pet
+      ? `${p.name} has no space for another ${pet.species.toLowerCase()} on these dates (City of Windsor By-law 8156 limit). Choose other dates.`
+      : clashes.length > 0
       ? `${p.name} isn't available on ${clashes.map((d) => formatDateRange(d, d)).join(", ")}. Choose other dates.`
       : from < today
       ? "Choose a start date from today onwards."
@@ -105,7 +112,11 @@ export function RequestBooking() {
     setError(null);
     try {
       const bookingId = await requestBooking({ providerId: p.id, petId: pet.id, service: offer.service, start: from, end: to });
-      const state: RequestSentState = { requestedFrom: p.name, bookingId };
+      // Provider names end in an initial ("Amir H."), so the name never sits before a full stop.
+      const state: BookingsNotice = {
+        message: `Request sent. It shows as Requested until ${p.name} replies.`,
+        bookingId,
+      };
       navigate("/bookings", { replace: true, state });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send the request. Try again.");
@@ -195,6 +206,7 @@ export function RequestBooking() {
                   {dateError}
                 </p>
               )}
+              {hosted && <HostCapacity provider={p} space={space.data} species={pet?.species} className="mt-1" />}
               {p.unavailable.length > 0 && (
                 <div className="mt-2 border-t pt-3">
                   <AvailabilityCalendar blocked={p.unavailable} range={to >= from ? { from, to } : undefined} />

@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { ListingInput } from "@/data/api";
-import { AREAS, NEED_LABELS, SERVICE_UNITS, SERVICES } from "@/lib/catalog";
+import { AREAS, HOUSEHOLD_LIMIT, NEED_LABELS, SERVICE_UNITS, SERVICES } from "@/lib/catalog";
 import { FSA_PATTERN } from "@/lib/search";
 import type { ProviderSkill, ServiceId } from "@/types";
 
 const LIMITS = { name: 40, bio: 600, years: 60, minRate: 5, maxRate: 500 };
 
-type Errors = Partial<Record<"name" | "area" | "years" | "bio" | "services", string>>;
+type Errors = Partial<Record<"name" | "area" | "years" | "bio" | "services" | "pets", string>>;
 
 interface ListingFormProps {
   initial: ListingInput;
@@ -32,7 +32,8 @@ export function ListingForm({ initial, currentSkills, submitLabel, onSubmit }: L
   const [area, setArea] = useState(initial.areaFsa);
   const [bio, setBio] = useState(initial.bio);
   const [years, setYears] = useState(String(initial.yearsExperience));
-  const [hostCapacity, setHostCapacity] = useState(initial.hostCapacity);
+  const [ownDogs, setOwnDogs] = useState(String(initial.ownDogs));
+  const [ownCats, setOwnCats] = useState(String(initial.ownCats));
   const [rates, setRates] = useState<Partial<Record<ServiceId, string>>>(() =>
     Object.fromEntries(initial.services.map((s) => [s.service, String(s.rate)])),
   );
@@ -61,6 +62,10 @@ export function ListingForm({ initial, currentSkills, submitLabel, onSubmit }: L
     if (years === "" || !Number.isInteger(yearsNum) || yearsNum < 0 || yearsNum > LIMITS.years)
       found.years = `Whole years, 0 to ${LIMITS.years}.`;
     if (bio.length > LIMITS.bio) found.bio = `Keep it under ${LIMITS.bio} characters.`;
+    const dogs = Number(ownDogs);
+    const cats = Number(ownCats);
+    if (!Number.isInteger(dogs) || !Number.isInteger(cats) || dogs < 0 || cats < 0 || dogs > 10 || cats > 10)
+      found.pets = "Enter whole numbers from 0 to 10.";
     const chosen = Object.entries(rates);
     if (chosen.length === 0) found.services = "Offer at least one service.";
     else if (chosen.some(([, rate]) => !(Number(rate) >= LIMITS.minRate && Number(rate) <= LIMITS.maxRate)))
@@ -84,7 +89,8 @@ export function ListingForm({ initial, currentSkills, submitLabel, onSubmit }: L
         areaName: AREAS[area] ?? "Windsor-Essex",
         bio: bio.trim(),
         yearsExperience: Number(years),
-        hostCapacity: hostCapacity.trim(),
+        ownDogs: Number(ownDogs),
+        ownCats: Number(ownCats),
         // Keep the catalog order so the profile lists services consistently.
         services: SERVICES.filter((s) => s.id in rates).map((s) => ({
           service: s.id,
@@ -162,14 +168,45 @@ export function ListingForm({ initial, currentSkills, submitLabel, onSubmit }: L
             error={errors.years}
           />
         </div>
-        <Field
-          id="listing-capacity"
-          label="Space at home"
-          hint='Optional. Shown on your profile, e.g. "Space for 1 more dog on these dates".'
-          value={hostCapacity}
-          maxLength={80}
-          onChange={(e) => setHostCapacity(e.target.value)}
-        />
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-4">
+        <div>
+          <p className="text-sm font-semibold">Your own pets</p>
+          <p className="text-xs text-muted-foreground">
+            City of Windsor By-law 8156 allows {HOUSEHOLD_LIMIT.Dog} dogs and {HOUSEHOLD_LIMIT.Cat} cats per home,
+            your own included. If you offer boarding or daycare, guests are limited so you stay within it.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            id="listing-own-dogs"
+            label="Dogs"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={10}
+            value={ownDogs}
+            onChange={(e) => {
+              setOwnDogs(e.target.value);
+              clear("pets");
+            }}
+          />
+          <Field
+            id="listing-own-cats"
+            label="Cats"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={10}
+            value={ownCats}
+            onChange={(e) => {
+              setOwnCats(e.target.value);
+              clear("pets");
+            }}
+          />
+        </div>
+        {errors.pets && <p className="text-xs text-destructive">{errors.pets}</p>}
       </Card>
 
       <Card className="p-4">

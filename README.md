@@ -49,7 +49,8 @@ Requires Node.js 20.19 or newer and a free [Supabase](https://supabase.com) proj
 
 1. **Set up the database.** In the Supabase dashboard, open **SQL Editor** and run, in order:
    `supabase/migrations/0001_init.sql`, `supabase/seed.sql`, `supabase/migrations/0002_booking_requests.sql`,
-   `supabase/migrations/0003_provider_tools.sql`, then `supabase/migrations/0004_availability_and_completion.sql`.
+   `supabase/migrations/0003_provider_tools.sql`, `supabase/migrations/0004_availability_and_completion.sql`,
+   then `supabase/migrations/0005_reviews_and_capacity.sql`.
 2. **Connect the app.** Copy `.env.example` to `.env.local` and fill in the Project URL and the
    **publishable** key from **Project Settings → API Keys**. Never use the secret key here.
 3. **Run it:**
@@ -64,6 +65,30 @@ demo bookings. Supabase asks new users to confirm their email by default; for qu
 can turn that off under **Authentication → Sign In / Providers → Email**.
 
 Other scripts: `npm run typecheck` and `npm run build`.
+
+## Payments (Stripe test mode)
+
+Checkout runs through two Supabase Edge Functions in `supabase/functions/`. The Stripe secret key lives
+only in Supabase, never in the app, and only `sk_test_` keys are accepted, so no real card is charged.
+
+1. Create a free Stripe account and stay in **Test mode**. Copy the **Secret key** (`sk_test_...`) from
+   Developers → API keys.
+2. In Supabase, open **Edge Functions → Secrets** and add `STRIPE_SECRET_KEY` (the test key) and
+   `ALLOWED_ORIGINS` (the app's address, e.g. `http://localhost:5173,https://your-app.vercel.app`).
+3. Deploy the functions `create-checkout` and `confirm-payment`, with the shared `_shared/common.ts`:
+   `npx supabase functions deploy create-checkout` and `npx supabase functions deploy confirm-payment`
+   (after `npx supabase login` and `npx supabase link`).
+4. Pay for an accepted booking with the test card `4242 4242 4242 4242`, any future date and any CVC.
+
+## Hosting a test build
+
+The app is a static site, so any static host works. `vercel.json` and `public/_redirects` send every
+path to `index.html`, so links to any screen work.
+
+1. Import the GitHub repository in Vercel (or Netlify). Build command `npm run build`, output folder `dist`.
+2. Add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (same as `.env.local`).
+3. In Supabase, **Authentication → URL Configuration**: set the Site URL to the hosted address and add
+   `https://your-app.vercel.app/**` to the Redirect URLs, so confirmation emails open the app.
 
 ## Screens
 
@@ -114,7 +139,10 @@ makes it safe for the app to ship the publishable key.
 - [x] Booking requests: send, price check and withdraw
 - [x] Provider tools: listing setup, accept or decline requests
 - [x] Availability calendar and marking bookings completed
-- [ ] Stripe test-mode payments
+- [x] Reviews with skill confirmation and automatic Proven level
+- [x] Host capacity limit (City of Windsor By-law 8156) and provider's own pets
+- [x] Area search within 15 km
+- [x] Stripe test-mode checkout (Edge Functions; deploy and add the test key to use it)
 - [ ] Android build with Capacitor
 
 ## Notes

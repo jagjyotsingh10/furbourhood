@@ -58,7 +58,9 @@ export interface Provider {
   skills: ProviderSkill[];
   services: ProviderService[];
   /** Only for providers who host pets in their own home (boarding, daycare, sitting) */
-  hostCapacity?: string;
+  /** The provider's own pets, which count toward the household limit when they host */
+  ownDogs: number;
+  ownCats: number;
   /** Upcoming dates (yyyy-mm-dd) the provider has blocked. Empty when not loaded. */
   unavailable: string[];
   reviews: Review[];

@@ -70,3 +70,25 @@ export const SERVICE_UNITS: Record<ServiceId, string> = {
   boarding: "night",
   daycare: "day",
 };
+
+/** City of Windsor By-law 8156: pets allowed per premises, the host's own included (report Section 2.3). */
+export const HOUSEHOLD_LIMIT = { Dog: 3, Cat: 4 } as const;
+
+/** Services that happen at the provider's home, so the household limit applies. */
+export const HOSTED_SERVICES: ServiceId[] = ["boarding", "daycare"];
+
+/**
+ * Approximate centre of each Windsor-Essex area (lat, lng), used only to keep search results local.
+ * Rough points, not survey data; replace with Canada Post FSA centroids before launch.
+ */
+export const AREA_CENTRES: Record<string, [number, number]> = {
+  N9A: [42.315, -83.04],
+  N8X: [42.29, -83.01],
+  N9G: [42.255, -83.03],
+  N8N: [42.3, -82.89],
+  N9J: [42.225, -83.055],
+  N9V: [42.1, -83.105],
+};
+
+/** How far from the owner's area search looks by default. */
+export const SEARCH_RADIUS_KM = 15;

@@ -3,8 +3,8 @@
 Local pet-care marketplace for Windsor-Essex, Ontario. University capstone MVP.
 A React web app that will later be packaged for Android with Capacitor.
 
-Current phase: Supabase backend connected (email log-in, providers, pets, bookings), pet management, booking
-requests, provider tools (listing, accept / decline), availability and marking bookings completed. Next: Stripe test mode, reviews, Android build.
+Current phase: Supabase backend, pet management, booking requests, provider tools, availability, reviews with
+Proven skills, the by-law capacity limit, area search and Stripe test-mode checkout (functions need deploying). Next: Android build.
 
 ## Commands
 - `npm run dev` starts the dev server
@@ -30,6 +30,10 @@ requests, provider tools (listing, accept / decline), availability and marking b
 - All reads go through `src/data/api.ts`, which maps snake_case rows onto the types in `src/types.ts`. Screens use the hooks in `src/data/hooks.ts` and show `LoadingState`, `ErrorState` and `EmptyState` (`src/components/States.tsx`). Screens never call `supabase` directly, except the auth calls in `Auth.tsx` and log-out in `Profile.tsx`.
 - Queries for "my" data (profile, pets, bookings, listing) always filter by the signed-in user's id. Never rely on RLS alone to narrow a list to "mine": providers can also read the pets and profiles in requests sent to them, so an unfiltered query returns more than one person's rows.
 - Provider rules live in `0003_provider_tools.sql`: only `provider` accounts create a listing (one each); triggers stop providers setting their own verification, featured, rating, review count or skill levels, stop anyone changing their own role, and allow a provider to change only a booking's status (requested → accepted or declined). Policies that need to read another table's rows go through `security definer` helpers (`is_my_listing`, `pet_in_my_requests`, `owner_in_my_requests`) to avoid policy recursion.
+- Reviews, Proven and capacity live in `0005_reviews_and_capacity.sql`. `prepare_review()` fills a review's provider, pet, author and date from the owner's completed booking (one review per booking); `apply_review()` updates the rating and makes a skill Proven once 3 different owners confirm it. Triggers that change provider rows on someone's behalf set the transaction-local flag `furbourhood.system` so the 0003 guards let them through; never expose a way to set it.
+- Host capacity follows City of Windsor By-law 8156: 3 dogs and 4 cats per home, the host's own pets (`own_dogs`, `own_cats`) included, for boarding and daycare only. `check_host_capacity()` refuses a request or an Accept that would exceed it on the busiest day; `host_space()` (RPC) gives the space left for the app. Keep `HOUSEHOLD_LIMIT` in `src/lib/catalog.ts` equal to `household_limit()`.
+- Payments: `supabase/functions/create-checkout` and `confirm-payment` (Deno). Only `sk_test_` keys are accepted. Paid is set only by `confirm-payment` with the service role after Stripe confirms the amount; secrets `STRIPE_SECRET_KEY` and `ALLOWED_ORIGINS` live in Supabase, never in the app.
+- Area search keeps providers within `SEARCH_RADIUS_KM` (15 km) of the owner's area using `AREA_CENTRES`, which are approximate points, not survey data.
 - Availability and status steps live in `0004_availability_and_completion.sql`. Providers block dates in `provider_unavailable_dates`; a trigger rejects requests that include a blocked date, and search, profile and Request booking hide or flag clashes (`blockedDuring` in `src/lib/match.ts`). `guard_booking_update()` is the single rulebook for status changes by signed-in users: requested → accepted or declined, accepted or paid → completed (from the last day onwards). Everything else is refused, including accepted → paid, so Stripe must set Paid from a server-side function (service role), never from the app.
 - `src/auth/`: `AuthProvider` (session, profile and role), `RequireAuth` (guards every tab screen; signed-out users go to `/login`) and `HomeRedirect` (`/home` sends providers to `/requests`, owners to `/find`).
 
@@ -90,5 +94,5 @@ labelled as demo data in code, in the database (`is_demo`) and on screen (`DemoN
 ## Routes
 `/` Welcome · `/signup?role=owner|provider` Sign up · `/login` Log in ·
 `/find` Find care · `/results` Results · `/providers/:id` Provider profile · `/providers/:id/request` Request booking ·
-`/pets` My pets · `/pets/new` Add pet · `/pets/:id/edit` Edit pet · `/bookings` Bookings · `/profile` Profile · `/styleguide` Style guide ·
+`/pets` My pets · `/pets/new` Add pet · `/pets/:id/edit` Edit pet · `/bookings` Bookings · `/bookings/:id/review` Leave a review · `/profile` Profile · `/styleguide` Style guide ·
 `/home` role-based landing · Providers: `/requests` Requests · `/listing` My listing · `/listing/availability` Availability

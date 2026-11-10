@@ -22,7 +22,8 @@ function toListingInput(listing: Provider | null, fallbackName: string): Listing
       areaFsa: "",
       bio: "",
       yearsExperience: 0,
-      hostCapacity: "",
+      ownDogs: 0,
+      ownCats: 0,
       services: [],
       needs: [],
     };
@@ -34,7 +35,8 @@ function toListingInput(listing: Provider | null, fallbackName: string): Listing
     areaFsa: listing.area.fsa,
     bio: listing.bio,
     yearsExperience: listing.yearsExperience,
-    hostCapacity: listing.hostCapacity ?? "",
+    ownDogs: listing.ownDogs,
+    ownCats: listing.ownCats,
     services: listing.services,
     needs: listing.skills.map((s) => s.need),
   };

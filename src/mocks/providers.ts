@@ -18,6 +18,8 @@ export const providers: Provider[] = [
     yearsExperience: 6,
     featured: false,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Former vet clinic assistant. I keep older dogs on their routines and I'm comfortable giving pills hidden in treats or by hand.",
     skills: [
       { need: "senior-care", level: "proven" },
@@ -30,7 +32,6 @@ export const providers: Provider[] = [
       { service: "drop-in", rate: 22, unit: "visit" },
       { service: "boarding", rate: 55, unit: "night" },
     ],
-    hostCapacity: "Space for 1 more dog on these dates",
     reviews: [
       {
         id: "r1",
@@ -69,6 +70,8 @@ export const providers: Provider[] = [
     yearsExperience: 4,
     featured: true,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Fenced yard near Lakewood Park. I board one or two dogs at a time so everyone gets attention.",
     skills: [
       { need: "senior-care", level: "verified" },
@@ -80,7 +83,6 @@ export const providers: Provider[] = [
       { service: "daycare", rate: 35, unit: "day" },
       { service: "walking", rate: 22, unit: "walk" },
     ],
-    hostCapacity: "Space for 1 more dog on these dates",
     reviews: [
       {
         id: "r1",
@@ -111,6 +113,8 @@ export const providers: Provider[] = [
     yearsExperience: 3,
     featured: false,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Certified in canine first aid. I work with nervous and reactive dogs using slow, reward-based introductions.",
     skills: [
       { need: "anxiety", level: "proven" },
@@ -145,6 +149,8 @@ export const providers: Provider[] = [
     yearsExperience: 5,
     featured: true,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Big backyard near the Vollmer Centre. High-energy dogs and puppies welcome for daycare.",
     skills: [
       { need: "puppy-training", level: "proven" },
@@ -156,7 +162,6 @@ export const providers: Provider[] = [
       { service: "boarding", rate: 48, unit: "night" },
       { service: "walking", rate: 20, unit: "walk" },
     ],
-    hostCapacity: "Space for 2 more dogs on these dates",
     reviews: [
       {
         id: "r1",
@@ -179,6 +184,8 @@ export const providers: Provider[] = [
     yearsExperience: 2,
     featured: false,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Nursing student who grew up with cats. Happy to do drop-ins for cats and small dogs.",
     skills: [
       { need: "cat-care", level: "verified" },
@@ -211,6 +218,8 @@ export const providers: Provider[] = [
     yearsExperience: 7,
     featured: false,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Retired teacher with a quiet house and plenty of time. Senior dogs are my favourite guests.",
     skills: [
       { need: "senior-care", level: "proven" },
@@ -223,7 +232,6 @@ export const providers: Provider[] = [
       { service: "sitting", rate: 65, unit: "night" },
       { service: "drop-in", rate: 20, unit: "visit" },
     ],
-    hostCapacity: "Space for 1 more dog on these dates",
     reviews: [
       {
         id: "r1",
@@ -254,6 +262,8 @@ export const providers: Provider[] = [
     yearsExperience: 1,
     featured: true,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "I live by the riverfront trail and walk dogs before and after my classes.",
     skills: [
       { need: "puppy-training", level: "self-declared" },
@@ -285,6 +295,8 @@ export const providers: Provider[] = [
     yearsExperience: 4,
     featured: false,
     unavailable: [],
+    ownDogs: 0,
+    ownCats: 0,
     bio: "Vet tech by day. I can give injections, including insulin, and handle post-surgery care.",
     skills: [
       { need: "injections", level: "proven" },

@@ -1,3 +1,4 @@
+import { AREA_CENTRES, SEARCH_RADIUS_KM } from "@/lib/catalog";
 import type { Pet, Provider, ProviderService, ProviderSkill, ServiceId, SkillLevel } from "@/types";
 
 export interface ProviderMatch {
@@ -57,4 +58,22 @@ export function lowestRate(provider: Provider): ProviderService | undefined {
 export function blockedDuring(provider: Provider, from: string, to: string): string[] {
   if (!from || !to) return [];
   return provider.unavailable.filter((day) => day >= from && day <= to);
+}
+
+/** Straight-line distance between two areas in km, or null when either area isn't on the map. */
+export function areaDistanceKm(fromFsa: string, toFsa: string): number | null {
+  const a = AREA_CENTRES[fromFsa];
+  const b = AREA_CENTRES[toFsa];
+  if (!a || !b) return null;
+  const rad = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * rad;
+  const dLng = (b[1] - a[1]) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+/** True when the provider is within the search radius, or when the owner's area isn't known. */
+export function isNearby(provider: Provider, ownerFsa: string): boolean {
+  const km = areaDistanceKm(ownerFsa, provider.area.fsa);
+  return km === null || km <= SEARCH_RADIUS_KM;
 }

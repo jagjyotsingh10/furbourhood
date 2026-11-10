@@ -31,7 +31,8 @@ interface ProviderRow {
   years_experience: number;
   featured: boolean;
   bio: string;
-  host_capacity: string | null;
+  own_dogs: number;
+  own_cats: number;
   provider_skills?: { need: CareNeed; level: SkillLevel }[];
   provider_unavailable_dates?: { day: string }[];
   provider_services?: { service: ServiceId; rate: number | string; unit: string }[];
@@ -66,6 +67,7 @@ interface BookingRow {
   status: BookingStatus;
   total: number | string;
   providers: ProviderRow | null;
+  reviews?: { id: string }[];
   pets: PetRow | null;
 }
 
@@ -80,7 +82,7 @@ interface ProfileRow {
 // Mapping
 // ---------------------------------------------------------------------------
 const PROVIDER_BASE =
-  "id, name, tone, area_name, area_fsa, verified_in_person, rating, review_count, years_experience, featured, bio, host_capacity";
+  "id, name, tone, area_name, area_fsa, verified_in_person, rating, review_count, years_experience, featured, bio, own_dogs, own_cats";
 const PROVIDER_FULL = `${PROVIDER_BASE}, provider_skills(need, level), provider_services(service, rate, unit), reviews(id, author_name, pet_name, rating, review_date, body), provider_unavailable_dates(day)`;
 // Only upcoming blocked dates matter; past ones are left out of every provider query.
 const UNAVAILABLE_FROM = "provider_unavailable_dates.day";
@@ -100,7 +102,8 @@ function toProvider(row: ProviderRow): Provider {
     yearsExperience: row.years_experience,
     featured: row.featured,
     bio: row.bio,
-    hostCapacity: row.host_capacity ?? undefined,
+    ownDogs: row.own_dogs,
+    ownCats: row.own_cats,
     unavailable: (row.provider_unavailable_dates ?? []).map((u) => u.day).sort(),
     skills: [...(row.provider_skills ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]),
     services: (row.provider_services ?? []).map((s) => ({ service: s.service, rate: Number(s.rate), unit: s.unit })),
@@ -252,6 +255,8 @@ export interface BookingDetails {
   booking: Booking;
   provider: Provider;
   pet: Pet;
+  /** True once the owner has reviewed this booking */
+  reviewed: boolean;
 }
 
 /** Bookings the signed-in user made as an owner (providers see theirs through fetchProviderRequests). */
@@ -259,7 +264,7 @@ export async function fetchBookings(userId: string): Promise<BookingDetails[]> {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      `id, provider_id, pet_id, service, start_date, end_date, status, total, providers(${PROVIDER_BASE}), pets(${PET_FIELDS})`,
+      `id, provider_id, pet_id, service, start_date, end_date, status, total, providers(${PROVIDER_BASE}, provider_skills(need, level)), pets(${PET_FIELDS}), reviews(id)`,
     )
     .eq("owner_id", userId)
     .order("start_date");
@@ -281,6 +286,7 @@ export async function fetchBookings(userId: string): Promise<BookingDetails[]> {
         },
         provider: toProvider(row.providers),
         pet: toPet(row.pets),
+        reviewed: (row.reviews ?? []).length > 0,
       },
     ];
   });
@@ -328,7 +334,8 @@ export interface ListingInput {
   areaFsa: string;
   bio: string;
   yearsExperience: number;
-  hostCapacity: string;
+  ownDogs: number;
+  ownCats: number;
   services: { service: ServiceId; rate: number; unit: string }[];
   needs: CareNeed[];
 }
@@ -345,7 +352,8 @@ export async function saveListing(userId: string, existing: Provider | null, inp
     area_fsa: input.areaFsa,
     bio: input.bio,
     years_experience: input.yearsExperience,
-    host_capacity: input.hostCapacity || null,
+    own_dogs: input.ownDogs,
+    own_cats: input.ownCats,
   };
 
   let id = existing?.id;
@@ -469,4 +477,64 @@ export async function saveUnavailableDates(listingId: string, before: string[], 
       .insert(added.map((day) => ({ provider_id: listingId, day })));
     if (error) fail(error.message);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Reviews and host capacity
+// ---------------------------------------------------------------------------
+export interface ReviewInput {
+  bookingId: string;
+  rating: number;
+  body: string;
+  /** Skills the owner confirms the provider used well; 3+ owners make a skill Proven */
+  confirmedNeeds: CareNeed[];
+}
+
+/** The database fills in the provider, pet, author and date from the booking (prepare_review). */
+export async function createReview(input: ReviewInput): Promise<void> {
+  const { error } = await supabase.from("reviews").insert({
+    booking_id: input.bookingId,
+    rating: input.rating,
+    body: input.body,
+    confirmed_needs: input.confirmedNeeds,
+  });
+  if (error) fail(error.message);
+}
+
+export interface HostSpace {
+  dogsLeft: number;
+  catsLeft: number;
+}
+
+/** Space left at a host's home on the busiest day of a range, under City of Windsor By-law 8156. */
+export async function fetchHostSpace(providerId: string, from: string, to: string): Promise<HostSpace | null> {
+  const { data, error } = await supabase.rpc("host_space", { p_provider: providerId, p_from: from, p_to: to });
+  if (error) fail(error.message);
+  const row = (data as { dogs_left: number; cats_left: number }[] | null)?.[0];
+  return row ? { dogsLeft: row.dogs_left, catsLeft: row.cats_left } : null;
+}
+
+// ---------------------------------------------------------------------------
+// Payments (Stripe test mode, through the create-checkout and confirm-payment Edge Functions)
+// ---------------------------------------------------------------------------
+async function callFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (error) {
+    // The function's own { error } message is more useful than the generic one.
+    const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    if (detail?.error) fail(detail.error);
+    fail("Payments aren't available right now. The payment functions may not be set up yet.");
+  }
+  return data as T;
+}
+
+/** Returns the Stripe Checkout address for an accepted booking. */
+export async function startCheckout(bookingId: string): Promise<string> {
+  const { url } = await callFunction<{ url: string }>("create-checkout", { bookingId });
+  return url;
+}
+
+/** After Stripe sends the owner back, marks the booking Paid once Stripe confirms it. */
+export async function confirmPayment(sessionId: string): Promise<void> {
+  await callFunction<{ status: string }>("confirm-payment", { sessionId });
 }
