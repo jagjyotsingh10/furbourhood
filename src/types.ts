@@ -16,7 +16,7 @@ export type CareNeed =
 
 export type BrandTone = "navy" | "sky" | "mint" | "coral";
 
-export type BookingStatus = "requested" | "accepted" | "paid" | "completed";
+export type BookingStatus = "requested" | "accepted" | "declined" | "paid" | "completed";
 
 export interface Area {
   name: string;

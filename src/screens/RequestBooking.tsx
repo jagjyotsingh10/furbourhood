@@ -168,7 +168,7 @@ export function RequestBooking() {
                 <div className="rounded-control bg-cloud p-3">
                   <p className="flex items-center gap-1.5 text-sm font-semibold">
                     <CircleCheck className="size-4" aria-hidden />
-                    Meets {match.matchedSkills.length} of {pet?.name}'s {match.needsTotal} needs
+                    Meets {match.matchedSkills.length} of {pet?.name}'s {plural(match.needsTotal, "need")}
                   </p>
                   {match.matchedSkills.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

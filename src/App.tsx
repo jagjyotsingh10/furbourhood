@@ -1,18 +1,21 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "@/auth/AuthProvider";
+import { HomeRedirect } from "@/auth/HomeRedirect";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LogIn, SignUp } from "@/screens/Auth";
 import { Bookings } from "@/screens/Bookings";
 import { FindCare } from "@/screens/FindCare";
+import { MyListing } from "@/screens/MyListing";
 import { MyPets } from "@/screens/MyPets";
 import { NotFound } from "@/screens/NotFound";
 import { AddPet, EditPet } from "@/screens/PetEditor";
 import { Profile } from "@/screens/Profile";
 import { ProviderProfile } from "@/screens/ProviderProfile";
 import { RequestBooking } from "@/screens/RequestBooking";
+import { Requests } from "@/screens/Requests";
 import { Results } from "@/screens/Results";
 import { Styleguide } from "@/screens/Styleguide";
 import { Welcome } from "@/screens/Welcome";
@@ -33,6 +36,9 @@ export default function App() {
                 </RequireAuth>
               }
             >
+              <Route path="/home" element={<HomeRedirect />} />
+              <Route path="/requests" element={<Requests />} />
+              <Route path="/listing" element={<MyListing />} />
               <Route path="/find" element={<FindCare />} />
               <Route path="/results" element={<Results />} />
               <Route path="/providers/:id" element={<ProviderProfile />} />

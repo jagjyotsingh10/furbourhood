@@ -6,7 +6,7 @@ import { FeaturedBadge, Rating, VerifiedBadge } from "@/components/Badges";
 import { LevelBadge } from "@/components/LevelBadge";
 import { Card } from "@/components/ui/card";
 import { NEED_LABELS } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, plural } from "@/lib/format";
 import type { ProviderMatch } from "@/lib/match";
 
 interface ProviderCardProps {
@@ -52,7 +52,7 @@ export function ProviderCard({ match, showFeatured = false, search = "" }: Provi
         <div className="mt-3 rounded-control bg-cloud p-3">
           <p className="flex items-center gap-1.5 text-sm font-semibold">
             <CircleCheck className="size-4" aria-hidden />
-            Meets {matchedSkills.length} of {needsTotal} needs
+            Meets {matchedSkills.length} of {plural(needsTotal, "need")}
           </p>
           {matchedSkills.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">

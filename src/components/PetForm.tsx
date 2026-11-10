@@ -2,31 +2,17 @@ import { useState, type FormEvent } from "react";
 import { Cat, Dog } from "lucide-react";
 
 import { Avatar } from "@/components/Avatar";
-import { ChoiceGroup, Field, FormError, type Choice } from "@/components/Field";
+import { ChoiceGroup, Field, FormError, TonePicker, type Choice } from "@/components/Field";
 import { NeedPicker } from "@/components/NeedPicker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { PetInput } from "@/data/api";
-import { cn } from "@/lib/utils";
-import type { BrandTone, Pet } from "@/types";
+import type { Pet } from "@/types";
 
 const SPECIES: Choice<Pet["species"]>[] = [
   { value: "Dog", label: "Dog", icon: <Dog className="size-4" aria-hidden /> },
   { value: "Cat", label: "Cat", icon: <Cat className="size-4" aria-hidden /> },
 ];
-
-const SWATCH: Record<BrandTone, string> = {
-  coral: "bg-coral",
-  sky: "bg-sky",
-  mint: "bg-mint",
-  navy: "bg-navy",
-};
-
-const TONES: Choice<BrandTone>[] = (["coral", "sky", "mint", "navy"] as const).map((tone) => ({
-  value: tone,
-  label: tone[0]!.toUpperCase() + tone.slice(1),
-  icon: <span className={cn("size-4 rounded-full border border-navy/20", SWATCH[tone])} aria-hidden />,
-}));
 
 export const EMPTY_PET: PetInput = {
   name: "",
@@ -171,7 +157,7 @@ export function PetForm({ initial, submitLabel, onSubmit }: PetFormProps) {
       </Card>
 
       <Card className="p-4">
-        <ChoiceGroup name="tone" legend="Avatar colour" options={TONES} value={tone} onChange={setTone} columns={4} />
+        <TonePicker value={tone} onChange={setTone} />
       </Card>
 
       <FormError message={formError} />

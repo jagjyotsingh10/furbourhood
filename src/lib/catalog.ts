@@ -47,6 +47,7 @@ export const LEVEL_DESCRIPTIONS: Record<SkillLevel, string> = {
 export const STATUS_LABELS: Record<BookingStatus, string> = {
   requested: "Requested",
   accepted: "Accepted",
+  declined: "Declined",
   paid: "Paid",
   completed: "Completed",
 };
@@ -59,4 +60,13 @@ export const AREAS: Record<string, string> = {
   N8N: "Tecumseh",
   N9J: "LaSalle",
   N9V: "Amherstburg",
+};
+
+/** Billing unit for each service. Fixed, so every listing prices the same way. */
+export const SERVICE_UNITS: Record<ServiceId, string> = {
+  walking: "walk",
+  "drop-in": "visit",
+  sitting: "night",
+  boarding: "night",
+  daycare: "day",
 };

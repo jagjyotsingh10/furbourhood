@@ -18,7 +18,7 @@ export function Welcome() {
   const navigate = useNavigate();
   const [role, setRole] = useState<UserRole>("owner");
 
-  if (session) return <Navigate to="/find" replace />;
+  if (session) return <Navigate to="/home" replace />;
 
   return (
     <PhoneFrame>

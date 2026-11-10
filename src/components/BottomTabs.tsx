@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { CalendarDays, PawPrint, Search, UserRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardList, Inbox, PawPrint, Search, UserRound, type LucideIcon } from "lucide-react";
 
+import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
 interface Tab {
@@ -11,23 +12,31 @@ interface Tab {
   match: string[];
 }
 
-const TABS: Tab[] = [
+const OWNER_TABS: Tab[] = [
   { to: "/find", label: "Find care", icon: Search, match: ["/find", "/results", "/providers"] },
   { to: "/bookings", label: "Bookings", icon: CalendarDays, match: ["/bookings"] },
   { to: "/pets", label: "My pets", icon: PawPrint, match: ["/pets"] },
   { to: "/profile", label: "Profile", icon: UserRound, match: ["/profile", "/styleguide"] },
 ];
 
+const PROVIDER_TABS: Tab[] = [
+  { to: "/requests", label: "Requests", icon: Inbox, match: ["/requests"] },
+  { to: "/listing", label: "My listing", icon: ClipboardList, match: ["/listing", "/providers"] },
+  { to: "/profile", label: "Profile", icon: UserRound, match: ["/profile", "/styleguide"] },
+];
+
 export function BottomTabs() {
   const { pathname } = useLocation();
+  const { role } = useAuth();
+  const tabs = role === "provider" ? PROVIDER_TABS : OWNER_TABS;
 
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] border-t bg-white pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="grid h-[4.25rem] grid-cols-4">
-        {TABS.map(({ to, label, icon: Icon, match }) => {
+      <ul className={cn("grid h-[4.25rem]", tabs.length === 3 ? "grid-cols-3" : "grid-cols-4")}>
+        {tabs.map(({ to, label, icon: Icon, match }) => {
           const active = match.some((path) => pathname.startsWith(path));
           return (
             <li key={to}>

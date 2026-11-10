@@ -1,6 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { BedDouble, MapPin } from "lucide-react";
 
+import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody, SectionTitle } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
@@ -20,6 +21,7 @@ export function ProviderProfile() {
   const { id = "" } = useParams();
   const [params] = useSearchParams();
   const { data: provider, loading, error, reload } = useProvider(id);
+  const { role } = useAuth();
 
   if (loading || error) {
     return (
@@ -111,6 +113,11 @@ export function ProviderProfile() {
             <SectionTitle>Reviews</SectionTitle>
             <Rating rating={provider.rating} reviewCount={provider.reviewCount} />
           </div>
+          {provider.reviews.length === 0 && (
+            <p className="rounded-card bg-card p-4 text-sm text-muted-foreground shadow-card">
+              No reviews yet. Owners can review {provider.name} after a completed booking.
+            </p>
+          )}
           <ul className="flex flex-col gap-3">
             {provider.reviews.map((review) => (
               <li key={review.id}>
@@ -146,9 +153,16 @@ export function ProviderProfile() {
               {offer.unit}
             </p>
           )}
-          <Button size="lg" className="flex-1" asChild>
-            <Link to={`/providers/${provider.id}/request${toQuery(search)}`}>Request booking</Link>
-          </Button>
+          {/* Providers browse listings but can't book care; on their own listing this is a preview. */}
+          {role === "provider" ? (
+            <Button size="lg" variant="outline" className="flex-1" asChild>
+              <Link to="/listing">Edit listing</Link>
+            </Button>
+          ) : (
+            <Button size="lg" className="flex-1" asChild>
+              <Link to={`/providers/${provider.id}/request${toQuery(search)}`}>Request booking</Link>
+            </Button>
+          )}
         </div>
       </div>
     </>

@@ -2,10 +2,12 @@ import { useAuth } from "@/auth/AuthProvider";
 import {
   countPetBookings,
   fetchBookings,
+  fetchMyListing,
   fetchPet,
   fetchPets,
   fetchProfile,
   fetchProvider,
+  fetchProviderRequests,
   fetchProviders,
 } from "@/data/api";
 import { useQuery } from "@/data/useQuery";
@@ -18,9 +20,26 @@ function useUserKey(name: string) {
 
 export const useProviders = () => useQuery(useUserKey("providers"), fetchProviders);
 export const useProvider = (id: string) => useQuery(useUserKey(`provider:${id}`), () => fetchProvider(id));
-export const usePets = () => useQuery(useUserKey("pets"), fetchPets);
+export function usePets() {
+  const { user } = useAuth();
+  return useQuery(useUserKey("pets"), () => (user ? fetchPets(user.id) : Promise.resolve([])));
+}
 export const usePet = (id: string) => useQuery(useUserKey(`pet:${id}`), () => fetchPet(id));
 export const usePetBookingCount = (id: string) =>
   useQuery(useUserKey(`pet-bookings:${id}`), () => countPetBookings(id));
-export const useBookings = () => useQuery(useUserKey("bookings"), fetchBookings);
-export const useProfile = () => useQuery(useUserKey("profile"), fetchProfile);
+export function useBookings() {
+  const { user } = useAuth();
+  return useQuery(useUserKey("bookings"), () => (user ? fetchBookings(user.id) : Promise.resolve([])));
+}
+export function useProfile() {
+  const { user } = useAuth();
+  return useQuery(useUserKey("profile"), () => (user ? fetchProfile(user.id) : Promise.resolve(null)));
+}
+
+export function useMyListing() {
+  const { user } = useAuth();
+  return useQuery(useUserKey("my-listing"), () => (user ? fetchMyListing(user.id) : Promise.resolve(null)));
+}
+
+export const useProviderRequests = (listingId: string) =>
+  useQuery(useUserKey(`requests:${listingId}`), () => fetchProviderRequests(listingId));

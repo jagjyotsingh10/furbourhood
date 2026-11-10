@@ -8,17 +8,27 @@ const ALL_NEEDS = Object.keys(NEED_LABELS) as CareNeed[];
 interface NeedPickerProps {
   value: CareNeed[];
   onChange: (needs: CareNeed[]) => void;
+  legend?: string;
+  hint?: string;
 }
 
-/** Pick a pet's care needs. Real checkboxes, styled like NeedChip (square corners), sky fill when chosen. */
-export function NeedPicker({ value, onChange }: NeedPickerProps) {
+/**
+ * Pick care needs (for a pet) or skills (for a listing): the same list either way.
+ * Real checkboxes, styled like NeedChip (square corners), sky fill when chosen.
+ */
+export function NeedPicker({
+  value,
+  onChange,
+  legend = "Care needs",
+  hint = "We use these to match providers with the right skills.",
+}: NeedPickerProps) {
   const toggle = (need: CareNeed) =>
     onChange(value.includes(need) ? value.filter((n) => n !== need) : [...value, need]);
 
   return (
     <fieldset>
-      <legend className="mb-1 text-sm font-semibold">Care needs</legend>
-      <p className="mb-2 text-xs text-muted-foreground">We use these to match providers with the right skills.</p>
+      <legend className="mb-1 text-sm font-semibold">{legend}</legend>
+      {hint && <p className="mb-2 text-xs text-muted-foreground">{hint}</p>}
       <div className="flex flex-wrap gap-2">
         {ALL_NEEDS.map((need) => {
           const checked = value.includes(need);

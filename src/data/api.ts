@@ -144,8 +144,9 @@ export async function fetchProvider(id: string): Promise<Provider | null> {
   return data ? toProvider(data as unknown as ProviderRow) : null;
 }
 
-export async function fetchPets(): Promise<Pet[]> {
-  const { data, error } = await supabase.from("pets").select(PET_FIELDS).order("created_at");
+/** The signed-in owner's pets. Filtered by owner: providers can also see pets from requests sent to them. */
+export async function fetchPets(userId: string): Promise<Pet[]> {
+  const { data, error } = await supabase.from("pets").select(PET_FIELDS).eq("owner_id", userId).order("created_at");
   if (error) fail(error.message);
   return (data as unknown as PetRow[]).map(toPet);
 }
@@ -239,12 +240,14 @@ export interface BookingDetails {
   pet: Pet;
 }
 
-export async function fetchBookings(): Promise<BookingDetails[]> {
+/** Bookings the signed-in user made as an owner (providers see theirs through fetchProviderRequests). */
+export async function fetchBookings(userId: string): Promise<BookingDetails[]> {
   const { data, error } = await supabase
     .from("bookings")
     .select(
       `id, provider_id, pet_id, service, start_date, end_date, status, total, providers(${PROVIDER_BASE}), pets(${PET_FIELDS})`,
     )
+    .eq("owner_id", userId)
     .order("start_date");
   if (error) fail(error.message);
 
@@ -276,10 +279,148 @@ export interface Profile {
   areaFsa: string | null;
 }
 
-export async function fetchProfile(): Promise<Profile | null> {
-  const { data, error } = await supabase.from("profiles").select("id, role, full_name, area_fsa").maybeSingle();
+/** Always filter by id: providers can also see the profiles of owners who sent them requests. */
+export async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, role, full_name, area_fsa")
+    .eq("id", userId)
+    .maybeSingle();
   if (error) fail(error.message);
   if (!data) return null;
   const row = data as ProfileRow;
   return { id: row.id, role: row.role, fullName: row.full_name, areaFsa: row.area_fsa };
+}
+
+// ---------------------------------------------------------------------------
+// Provider tools
+// ---------------------------------------------------------------------------
+export async function fetchMyListing(userId: string): Promise<Provider | null> {
+  const { data, error } = await supabase.from("providers").select(PROVIDER_FULL).eq("user_id", userId).maybeSingle();
+  if (error) fail(error.message);
+  return data ? toProvider(data as unknown as ProviderRow) : null;
+}
+
+/** What the My listing form saves. Verification, featured, rating and skill levels are set by the database. */
+export interface ListingInput {
+  name: string;
+  tone: BrandTone;
+  areaName: string;
+  areaFsa: string;
+  bio: string;
+  yearsExperience: number;
+  hostCapacity: string;
+  services: { service: ServiceId; rate: number; unit: string }[];
+  needs: CareNeed[];
+}
+
+/**
+ * Creates or updates the signed-in provider's listing, then syncs services and skills.
+ * Skills are diffed (not replaced) so existing Verified / Proven levels are never lost.
+ */
+export async function saveListing(userId: string, existing: Provider | null, input: ListingInput): Promise<string> {
+  const row = {
+    name: input.name,
+    tone: input.tone,
+    area_name: input.areaName,
+    area_fsa: input.areaFsa,
+    bio: input.bio,
+    years_experience: input.yearsExperience,
+    host_capacity: input.hostCapacity || null,
+  };
+
+  let id = existing?.id;
+  if (id) {
+    const { error } = await supabase.from("providers").update(row).eq("id", id);
+    if (error) fail(error.message);
+  } else {
+    const { data, error } = await supabase
+      .from("providers")
+      .insert({ ...row, user_id: userId })
+      .select("id")
+      .single();
+    if (error) fail(error.message);
+    id = (data as { id: string }).id;
+  }
+
+  const chosen = input.services.map((s) => s.service);
+  const removedServices = (existing?.services ?? []).map((s) => s.service).filter((s) => !chosen.includes(s));
+  if (removedServices.length > 0) {
+    const { error } = await supabase.from("provider_services").delete().eq("provider_id", id).in("service", removedServices);
+    if (error) fail(error.message);
+  }
+  if (input.services.length > 0) {
+    const { error } = await supabase
+      .from("provider_services")
+      .upsert(input.services.map((s) => ({ provider_id: id, service: s.service, rate: s.rate, unit: s.unit })));
+    if (error) fail(error.message);
+  }
+
+  const had = (existing?.skills ?? []).map((s) => s.need);
+  const removedNeeds = had.filter((n) => !input.needs.includes(n));
+  const addedNeeds = input.needs.filter((n) => !had.includes(n));
+  if (removedNeeds.length > 0) {
+    const { error } = await supabase.from("provider_skills").delete().eq("provider_id", id).in("need", removedNeeds);
+    if (error) fail(error.message);
+  }
+  if (addedNeeds.length > 0) {
+    // Level is forced to 'self-declared' by the database.
+    const { error } = await supabase.from("provider_skills").insert(addedNeeds.map((need) => ({ provider_id: id, need })));
+    if (error) fail(error.message);
+  }
+
+  return id;
+}
+
+export interface RequestDetails {
+  booking: Booking;
+  pet: Pet;
+  ownerName: string;
+}
+
+interface RequestRow extends Omit<BookingRow, "providers"> {
+  owner: { full_name: string } | null;
+}
+
+export async function fetchProviderRequests(listingId: string): Promise<RequestDetails[]> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      `id, provider_id, pet_id, service, start_date, end_date, status, total, pets(${PET_FIELDS}), owner:profiles!bookings_owner_profile_fkey(full_name)`,
+    )
+    .eq("provider_id", listingId)
+    .order("start_date");
+  if (error) fail(error.message);
+
+  return (data as unknown as RequestRow[]).flatMap((row) => {
+    if (!row.pets) return [];
+    return [
+      {
+        booking: {
+          id: row.id,
+          providerId: row.provider_id,
+          petId: row.pet_id,
+          service: row.service,
+          start: row.start_date,
+          end: row.end_date,
+          status: row.status,
+          total: Number(row.total),
+        },
+        pet: toPet(row.pets),
+        ownerName: row.owner?.full_name || "A pet owner",
+      },
+    ];
+  });
+}
+
+/** Provider accepts or declines a request. Fails if it is no longer 'requested'. */
+export async function answerRequest(id: string, status: "accepted" | "declined"): Promise<void> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ status })
+    .eq("id", id)
+    .eq("status", "requested")
+    .select("id");
+  if (error) fail(error.message);
+  if (!data || data.length === 0) fail("This request has already been answered or withdrawn.");
 }

@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { BrandTone } from "@/types";
 
 interface FieldProps extends ComponentProps<"input"> {
   id: string;
@@ -88,5 +89,49 @@ export function ChoiceGroup<T extends string>({ name, legend, options, value, on
         ))}
       </div>
     </fieldset>
+  );
+}
+
+const SWATCH: Record<BrandTone, string> = {
+  coral: "bg-coral",
+  sky: "bg-sky",
+  mint: "bg-mint",
+  navy: "bg-navy",
+};
+
+const TONES: Choice<BrandTone>[] = (["coral", "sky", "mint", "navy"] as const).map((tone) => ({
+  value: tone,
+  label: tone[0]!.toUpperCase() + tone.slice(1),
+  icon: <span className={cn("size-4 rounded-full border border-navy/20", SWATCH[tone])} aria-hidden />,
+}));
+
+/** Avatar colour for a pet or a listing. */
+export function TonePicker({ value, onChange }: { value: BrandTone; onChange: (tone: BrandTone) => void }) {
+  return <ChoiceGroup name="tone" legend="Avatar colour" options={TONES} value={value} onChange={onChange} columns={4} />;
+}
+
+/** Labelled multi-line text box. Same look as Input. */
+export function TextAreaField({
+  id,
+  label,
+  hint,
+  className,
+  ...textarea
+}: ComponentProps<"textarea"> & { id: string; label: string; hint?: string }) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label htmlFor={id}>{label}</Label>
+      <textarea
+        id={id}
+        aria-describedby={hint ? `${id}-hint` : undefined}
+        className="min-h-24 w-full rounded-control border border-input bg-card px-3.5 py-2.5 text-base text-navy placeholder:text-muted-foreground focus-visible:border-navy focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
+        {...textarea}
+      />
+      {hint && (
+        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
+    </div>
   );
 }

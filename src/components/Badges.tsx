@@ -1,4 +1,4 @@
-import { CircleCheck, Clock, CreditCard, ShieldCheck, Sparkles, Star, ThumbsUp } from "lucide-react";
+import { CircleCheck, CircleX, Clock, CreditCard, ShieldCheck, Sparkles, Star, ThumbsUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS } from "@/lib/catalog";
@@ -27,6 +27,7 @@ export function FeaturedBadge({ className }: { className?: string }) {
 const STATUS = {
   requested: { variant: "outline", icon: Clock },
   accepted: { variant: "sky", icon: ThumbsUp },
+  declined: { variant: "muted", icon: CircleX },
   paid: { variant: "navy", icon: CreditCard },
   completed: { variant: "mint", icon: CircleCheck },
 } as const;
@@ -42,6 +43,15 @@ export function StatusChip({ status, className }: { status: BookingStatus; class
 }
 
 export function Rating({ rating, reviewCount, className }: { rating: number; reviewCount?: number; className?: string }) {
+  // A listing with no reviews yet shows "New" instead of a 0.0 rating.
+  if (reviewCount === 0) {
+    return (
+      <Badge variant="muted" className={className}>
+        <Star aria-hidden />
+        New
+      </Badge>
+    );
+  }
   const label =
     reviewCount === undefined
       ? `Rated ${rating.toFixed(1)} out of 5`

@@ -67,13 +67,6 @@ export function Profile() {
           </Card>
         )}
 
-        {profile?.role === "provider" && (
-          <p className="rounded-card bg-sky-tint p-4 text-sm">
-            Provider tools (your listing, availability and requests) are coming next. For now you can browse as an
-            owner would.
-          </p>
-        )}
-
         <Card>
           <ul className="divide-y">
             <li>

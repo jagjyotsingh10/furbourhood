@@ -28,7 +28,7 @@ export function SignUp() {
   const [busy, setBusy] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
 
-  if (session) return <Navigate to="/find" replace />;
+  if (session) return <Navigate to="/home" replace />;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -47,7 +47,7 @@ export function SignUp() {
 
     if (signUpError) return setError(signUpError.message);
     // With email confirmation on, Supabase returns no session until the link is clicked.
-    if (data.session) navigate("/find", { replace: true });
+    if (data.session) navigate("/home", { replace: true });
     else setCheckEmail(true);
   };
 
@@ -128,7 +128,7 @@ export function LogIn() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? "/find";
+  const from = (location.state as { from?: string } | null)?.from ?? "/home";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
