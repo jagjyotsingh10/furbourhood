@@ -2,6 +2,7 @@
  * All Supabase reads live here. Each function maps database rows (snake_case)
  * onto the app types in src/types.ts, so screens and components never see raw rows.
  */
+import { todayISO } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import type {
   Booking,
@@ -32,6 +33,7 @@ interface ProviderRow {
   bio: string;
   host_capacity: string | null;
   provider_skills?: { need: CareNeed; level: SkillLevel }[];
+  provider_unavailable_dates?: { day: string }[];
   provider_services?: { service: ServiceId; rate: number | string; unit: string }[];
   reviews?: {
     id: string;
@@ -79,7 +81,9 @@ interface ProfileRow {
 // ---------------------------------------------------------------------------
 const PROVIDER_BASE =
   "id, name, tone, area_name, area_fsa, verified_in_person, rating, review_count, years_experience, featured, bio, host_capacity";
-const PROVIDER_FULL = `${PROVIDER_BASE}, provider_skills(need, level), provider_services(service, rate, unit), reviews(id, author_name, pet_name, rating, review_date, body)`;
+const PROVIDER_FULL = `${PROVIDER_BASE}, provider_skills(need, level), provider_services(service, rate, unit), reviews(id, author_name, pet_name, rating, review_date, body), provider_unavailable_dates(day)`;
+// Only upcoming blocked dates matter; past ones are left out of every provider query.
+const UNAVAILABLE_FROM = "provider_unavailable_dates.day";
 const PET_FIELDS = "id, name, species, breed, age_years, weight_kg, tone, needs";
 
 const LEVEL_ORDER: Record<SkillLevel, number> = { proven: 0, verified: 1, "self-declared": 2 };
@@ -97,6 +101,7 @@ function toProvider(row: ProviderRow): Provider {
     featured: row.featured,
     bio: row.bio,
     hostCapacity: row.host_capacity ?? undefined,
+    unavailable: (row.provider_unavailable_dates ?? []).map((u) => u.day).sort(),
     skills: [...(row.provider_skills ?? [])].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]),
     services: (row.provider_services ?? []).map((s) => ({ service: s.service, rate: Number(s.rate), unit: s.unit })),
     reviews: [...(row.reviews ?? [])]
@@ -133,13 +138,22 @@ function fail(message: string): never {
 // Queries
 // ---------------------------------------------------------------------------
 export async function fetchProviders(): Promise<Provider[]> {
-  const { data, error } = await supabase.from("providers").select(PROVIDER_FULL).order("name");
+  const { data, error } = await supabase
+    .from("providers")
+    .select(PROVIDER_FULL)
+    .gte(UNAVAILABLE_FROM, todayISO())
+    .order("name");
   if (error) fail(error.message);
   return (data as unknown as ProviderRow[]).map(toProvider);
 }
 
 export async function fetchProvider(id: string): Promise<Provider | null> {
-  const { data, error } = await supabase.from("providers").select(PROVIDER_FULL).eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("providers")
+    .select(PROVIDER_FULL)
+    .eq("id", id)
+    .gte(UNAVAILABLE_FROM, todayISO())
+    .maybeSingle();
   if (error) fail(error.message);
   return data ? toProvider(data as unknown as ProviderRow) : null;
 }
@@ -296,7 +310,12 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 // Provider tools
 // ---------------------------------------------------------------------------
 export async function fetchMyListing(userId: string): Promise<Provider | null> {
-  const { data, error } = await supabase.from("providers").select(PROVIDER_FULL).eq("user_id", userId).maybeSingle();
+  const { data, error } = await supabase
+    .from("providers")
+    .select(PROVIDER_FULL)
+    .eq("user_id", userId)
+    .gte(UNAVAILABLE_FROM, todayISO())
+    .maybeSingle();
   if (error) fail(error.message);
   return data ? toProvider(data as unknown as ProviderRow) : null;
 }
@@ -413,14 +432,41 @@ export async function fetchProviderRequests(listingId: string): Promise<RequestD
   });
 }
 
-/** Provider accepts or declines a request. Fails if it is no longer 'requested'. */
-export async function answerRequest(id: string, status: "accepted" | "declined"): Promise<void> {
+/**
+ * Provider moves a booking on: answer a request, or mark accepted / paid care as completed.
+ * `from` guards against acting on a stale screen; the database enforces the allowed steps.
+ */
+export async function updateBookingStatus(
+  id: string,
+  from: BookingStatus[],
+  to: "accepted" | "declined" | "completed",
+): Promise<void> {
   const { data, error } = await supabase
     .from("bookings")
-    .update({ status })
+    .update({ status: to })
     .eq("id", id)
-    .eq("status", "requested")
+    .in("status", from)
     .select("id");
   if (error) fail(error.message);
-  if (!data || data.length === 0) fail("This request has already been answered or withdrawn.");
+  if (!data || data.length === 0) fail("This booking has changed since you opened it. Refresh and try again.");
+}
+
+/** Saves the provider's blocked dates by adding and removing only what changed. */
+export async function saveUnavailableDates(listingId: string, before: string[], after: string[]): Promise<void> {
+  const removed = before.filter((d) => !after.includes(d));
+  const added = after.filter((d) => !before.includes(d));
+  if (removed.length > 0) {
+    const { error } = await supabase
+      .from("provider_unavailable_dates")
+      .delete()
+      .eq("provider_id", listingId)
+      .in("day", removed);
+    if (error) fail(error.message);
+  }
+  if (added.length > 0) {
+    const { error } = await supabase
+      .from("provider_unavailable_dates")
+      .insert(added.map((day) => ({ provider_id: listingId, day })));
+    if (error) fail(error.message);
+  }
 }

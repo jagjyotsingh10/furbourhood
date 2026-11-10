@@ -52,3 +52,9 @@ export function allProviders(providers: Provider[], pet: Pet | undefined, servic
 export function lowestRate(provider: Provider): ProviderService | undefined {
   return [...provider.services].sort((a, b) => a.rate - b.rate)[0];
 }
+
+/** The provider's blocked dates that fall inside the owner's dates (empty = available). */
+export function blockedDuring(provider: Provider, from: string, to: string): string[] {
+  if (!from || !to) return [];
+  return provider.unavailable.filter((day) => day >= from && day <= to);
+}

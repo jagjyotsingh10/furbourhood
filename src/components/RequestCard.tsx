@@ -9,18 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { RequestDetails } from "@/data/api";
 import { serviceInfo } from "@/lib/catalog";
-import { formatDateRange, formatPrice, plural } from "@/lib/format";
-import type { Provider } from "@/types";
+import { formatDateRange, formatPrice, plural, todayISO } from "@/lib/format";
+import type { BookingStatus, Provider } from "@/types";
+
+export type ProviderAction = "accepted" | "declined" | "completed";
 
 interface RequestCardProps {
   request: RequestDetails;
   listing: Provider;
-  /** Called with the answer; the card shows its own busy and error states. */
-  onAnswer?: (answer: "accepted" | "declined") => Promise<void>;
+  /** Called with the new status; the card shows its own busy and error states. */
+  onAction?: (to: ProviderAction, from: BookingStatus[]) => Promise<void>;
+}
+
+/** Accepted or paid care can be marked completed from its last day onwards. */
+export function canComplete(status: BookingStatus, end: string) {
+  return (status === "accepted" || status === "paid") && end <= todayISO();
 }
 
 /** A booking request as the provider sees it: who, which pet and its needs, when, how much. */
-export function RequestCard({ request, listing, onAnswer }: RequestCardProps) {
+export function RequestCard({ request, listing, onAction }: RequestCardProps) {
   const { booking, pet, ownerName } = request;
   const [confirmDecline, setConfirmDecline] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,12 +35,12 @@ export function RequestCard({ request, listing, onAnswer }: RequestCardProps) {
 
   const covered = pet.needs.filter((need) => listing.skills.some((s) => s.need === need));
 
-  const answer = async (value: "accepted" | "declined") => {
-    if (!onAnswer) return;
+  const act = async (to: ProviderAction) => {
+    if (!onAction) return;
     setBusy(true);
     setError(null);
     try {
-      await onAnswer(value);
+      await onAction(to, to === "completed" ? ["accepted", "paid"] : ["requested"]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save your answer. Try again.");
       setBusy(false);
@@ -79,7 +86,7 @@ export function RequestCard({ request, listing, onAnswer }: RequestCardProps) {
         <span className="font-bold">{formatPrice(booking.total)}</span>
       </div>
 
-      {onAnswer && booking.status === "requested" && (
+      {onAction && booking.status === "requested" && (
         <div className="mt-3 flex flex-col gap-2">
           <FormError message={error} />
           {confirmDecline ? (
@@ -89,7 +96,7 @@ export function RequestCard({ request, listing, onAnswer }: RequestCardProps) {
                 <Button variant="outline" size="sm" onClick={() => setConfirmDecline(false)} disabled={busy}>
                   Back
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => answer("declined")} disabled={busy}>
+                <Button variant="destructive" size="sm" onClick={() => act("declined")} disabled={busy}>
                   {busy ? "Declining…" : "Decline"}
                 </Button>
               </div>
@@ -99,11 +106,24 @@ export function RequestCard({ request, listing, onAnswer }: RequestCardProps) {
               <Button variant="outline" onClick={() => setConfirmDecline(true)} disabled={busy}>
                 Decline
               </Button>
-              <Button onClick={() => answer("accepted")} disabled={busy}>
+              <Button onClick={() => act("accepted")} disabled={busy}>
                 {busy ? "Accepting…" : "Accept"}
               </Button>
             </div>
           )}
+        </div>
+      )}
+
+      {onAction && canComplete(booking.status, booking.end) && (
+        <div className="mt-3 flex flex-col gap-2">
+          <FormError message={error} />
+          <Button variant="secondary" onClick={() => act("completed")} disabled={busy}>
+            <CircleCheck aria-hidden />
+            {busy ? "Saving…" : "Mark as completed"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Once completed, {ownerName} can leave a review.
+          </p>
         </div>
       )}
     </Card>

@@ -59,6 +59,8 @@ export interface Provider {
   services: ProviderService[];
   /** Only for providers who host pets in their own home (boarding, daycare, sitting) */
   hostCapacity?: string;
+  /** Upcoming dates (yyyy-mm-dd) the provider has blocked. Empty when not loaded. */
+  unavailable: string[];
   reviews: Review[];
 }
 

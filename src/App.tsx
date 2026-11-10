@@ -6,6 +6,7 @@ import { RequireAuth } from "@/auth/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LogIn, SignUp } from "@/screens/Auth";
+import { Availability } from "@/screens/Availability";
 import { Bookings } from "@/screens/Bookings";
 import { FindCare } from "@/screens/FindCare";
 import { MyListing } from "@/screens/MyListing";
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/home" element={<HomeRedirect />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/listing" element={<MyListing />} />
+              <Route path="/listing/availability" element={<Availability />} />
               <Route path="/find" element={<FindCare />} />
               <Route path="/results" element={<Results />} />
               <Route path="/providers/:id" element={<ProviderProfile />} />

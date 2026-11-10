@@ -3,25 +3,25 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
 import { ScreenBody } from "@/components/AppShell";
-import { RequestCard } from "@/components/RequestCard";
+import { canComplete, RequestCard } from "@/components/RequestCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { answerRequest, type RequestDetails } from "@/data/api";
+import { updateBookingStatus, type RequestDetails } from "@/data/api";
 import { useMyListing, useProviderRequests } from "@/data/hooks";
-import { todayISO } from "@/lib/format";
+import { plural, todayISO } from "@/lib/format";
 import type { Provider } from "@/types";
 
 function RequestList({
   items,
   listing,
   empty,
-  onAnswered,
+  onChanged,
 }: {
   items: RequestDetails[];
   listing: Provider;
   empty: string;
-  onAnswered?: () => void;
+  onChanged: () => void;
 }) {
   if (items.length === 0) return <EmptyState title={empty} />;
   return (
@@ -31,14 +31,10 @@ function RequestList({
           <RequestCard
             request={request}
             listing={listing}
-            onAnswer={
-              onAnswered
-                ? async (answer) => {
-                    await answerRequest(request.booking.id, answer);
-                    onAnswered();
-                  }
-                : undefined
-            }
+            onAction={async (to, from) => {
+              await updateBookingStatus(request.booking.id, from, to);
+              onChanged();
+            }}
           />
         </li>
       ))}
@@ -50,16 +46,18 @@ function RequestTabs({ listing }: { listing: Provider }) {
   const { data = [], loading, error, reload } = useProviderRequests(listing.id);
   const today = todayISO();
   const fresh = data.filter((r) => r.booking.status === "requested" && r.booking.end >= today);
-  const upcoming = data.filter((r) => ["accepted", "paid"].includes(r.booking.status) && r.booking.end >= today);
+  // Confirmed = accepted or paid. It stays here until marked completed, even after its dates pass.
+  const confirmed = data.filter((r) => ["accepted", "paid"].includes(r.booking.status));
+  const toComplete = confirmed.filter((r) => canComplete(r.booking.status, r.booking.end)).length;
   const past = data
-    .filter((r) => !fresh.includes(r) && !upcoming.includes(r))
+    .filter((r) => !fresh.includes(r) && !confirmed.includes(r))
     .sort((a, b) => b.booking.start.localeCompare(a.booking.start));
 
   return (
     <Tabs defaultValue="new">
       <TabsList>
         <TabsTrigger value="new">New{fresh.length > 0 && ` (${fresh.length})`}</TabsTrigger>
-        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+        <TabsTrigger value="confirmed">Confirmed{toComplete > 0 && ` (${toComplete})`}</TabsTrigger>
         <TabsTrigger value="past">Past</TabsTrigger>
       </TabsList>
       {loading && data.length === 0 ? (
@@ -69,13 +67,18 @@ function RequestTabs({ listing }: { listing: Provider }) {
       ) : (
         <>
           <TabsContent value="new">
-            <RequestList items={fresh} listing={listing} empty="No new requests." onAnswered={reload} />
+            <RequestList items={fresh} listing={listing} empty="No new requests." onChanged={reload} />
           </TabsContent>
-          <TabsContent value="upcoming">
-            <RequestList items={upcoming} listing={listing} empty="No upcoming bookings." />
+          <TabsContent value="confirmed">
+            {toComplete > 0 && (
+              <p className="mb-3 text-sm text-muted-foreground">
+                {plural(toComplete, "booking")} ready to mark as completed.
+              </p>
+            )}
+            <RequestList items={confirmed} listing={listing} empty="No confirmed bookings." onChanged={reload} />
           </TabsContent>
           <TabsContent value="past">
-            <RequestList items={past} listing={listing} empty="Nothing here yet." />
+            <RequestList items={past} listing={listing} empty="Nothing here yet." onChanged={reload} />
           </TabsContent>
         </>
       )}

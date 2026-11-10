@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleCheck, Eye } from "lucide-react";
+import { CalendarX2, ChevronRight, CircleCheck, Eye } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { saveListing, type ListingInput } from "@/data/api";
 import { useMyListing } from "@/data/hooks";
+import { plural } from "@/lib/format";
 import type { Provider } from "@/types";
 
 function toListingInput(listing: Provider | null, fallbackName: string): ListingInput {
@@ -92,6 +93,25 @@ export function MyListing() {
                   </p>
                 </div>
               )
+            )}
+            {listing && (
+              <Link
+                to="/listing/availability"
+                className="flex items-center gap-3 rounded-card bg-card p-4 shadow-card hover:bg-sky-tint/50"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-tint">
+                  <CalendarX2 className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Availability</span>
+                  <span className="block text-sm text-muted-foreground">
+                    {listing.unavailable.length === 0
+                      ? "You're shown as available every day"
+                      : `${plural(listing.unavailable.length, "date")} blocked`}
+                  </span>
+                </span>
+                <ChevronRight className="size-4" aria-hidden />
+              </Link>
             )}
             {/* After a save the form already shows what was saved; it only remounts when a new listing gets its id. */}
             <ListingForm

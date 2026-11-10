@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePets, useProviders } from "@/data/hooks";
 import { serviceInfo } from "@/lib/catalog";
 import { formatDateRange, plural } from "@/lib/format";
-import { allProviders, bestMatches, type ProviderMatch } from "@/lib/match";
+import { allProviders, bestMatches, blockedDuring, type ProviderMatch } from "@/lib/match";
 import { readSearch, toQuery } from "@/lib/search";
 
 function ProviderList({
@@ -46,9 +46,19 @@ export function Results() {
 
   const petList = pets.data ?? [];
   const pet = petList.find((p) => p.id === search.petId) ?? petList[0];
-  const providerList = providers.data ?? [];
+  // Providers who blocked any of the owner's dates are left out of both lists.
+  const everyone = providers.data ?? [];
+  const providerList = everyone.filter((p) => blockedDuring(p, search.from, search.to).length === 0);
+  const hidden = allProviders(everyone, pet, search.service).length - allProviders(providerList, pet, search.service).length;
   const best = bestMatches(providerList, pet, search.service);
   const all = allProviders(providerList, pet, search.service);
+  const hiddenNote =
+    hidden > 0 ? (
+      <p className="text-xs text-muted-foreground">
+        {plural(hidden, "provider")} {hidden === 1 ? "isn't" : "aren't"} available on{" "}
+        {formatDateRange(search.from, search.to)}, so {hidden === 1 ? "isn't" : "aren't"} shown.
+      </p>
+    ) : null;
   const loading = providers.loading || pets.loading;
   const error = providers.error ?? pets.error;
 
@@ -94,6 +104,7 @@ export function Results() {
                   {pet ? ` ${pet.name}'s` : " your pet's"} needs. Paid placement never changes this list.
                 </p>
                 <ProviderList matches={best} showFeatured={false} query={query} />
+                {hiddenNote}
               </TabsContent>
 
               <TabsContent value="all" className="flex flex-col gap-3">
@@ -101,6 +112,7 @@ export function Results() {
                   Everyone offering {service.label.toLowerCase()} near you. Featured providers are shown first.
                 </p>
                 <ProviderList matches={all} showFeatured query={query} />
+                {hiddenNote}
               </TabsContent>
             </>
           )}

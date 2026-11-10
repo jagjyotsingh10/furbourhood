@@ -1,17 +1,18 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { BedDouble, MapPin } from "lucide-react";
+import { BedDouble, CalendarCheck, CalendarX2, MapPin } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody, SectionTitle } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
+import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { Rating, VerifiedBadge } from "@/components/Badges";
 import { LevelBadge } from "@/components/LevelBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
-import { formatDate, formatPrice, plural } from "@/lib/format";
-import { lowestRate } from "@/lib/match";
+import { formatDate, formatDateRange, formatPrice, plural } from "@/lib/format";
+import { blockedDuring, lowestRate } from "@/lib/match";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useProvider } from "@/data/hooks";
 import { readSearch, toQuery } from "@/lib/search";
@@ -35,6 +36,9 @@ export function ProviderProfile() {
 
   const search = readSearch(params);
   const offer = provider.services.find((s) => s.service === search.service) ?? lowestRate(provider);
+  // Only compare against dates the owner actually searched for, not the screen's defaults.
+  const ownerDates = params.has("from") ? { from: search.from, to: search.to } : undefined;
+  const clashes = ownerDates ? blockedDuring(provider, ownerDates.from, ownerDates.to) : [];
 
   return (
     <>
@@ -54,6 +58,18 @@ export function ProviderProfile() {
           <p className="mt-1 text-sm text-muted-foreground">
             {plural(provider.yearsExperience, "year")} caring for pets
           </p>
+          {ownerDates &&
+            (clashes.length === 0 ? (
+              <p className="mt-4 flex w-full items-center justify-center gap-2 rounded-control bg-mint-tint px-3 py-2.5 text-sm font-semibold">
+                <CalendarCheck className="size-4 shrink-0" aria-hidden />
+                Available {formatDateRange(ownerDates.from, ownerDates.to)}
+              </p>
+            ) : (
+              <p className="mt-4 flex w-full items-center justify-center gap-2 rounded-control bg-coral-tint px-3 py-2.5 text-sm font-semibold">
+                <CalendarX2 className="size-4 shrink-0" aria-hidden />
+                Not available {clashes.map((d) => formatDateRange(d, d)).join(", ")}
+              </p>
+            ))}
           {provider.hostCapacity && (
             <p className="mt-4 flex w-full items-center justify-center gap-2 rounded-control bg-mint-tint px-3 py-2.5 text-sm font-semibold">
               <BedDouble className="size-4 shrink-0" aria-hidden />
@@ -105,6 +121,13 @@ export function ProviderProfile() {
                 );
               })}
             </ul>
+          </Card>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <SectionTitle>Availability</SectionTitle>
+          <Card className="p-4">
+            <AvailabilityCalendar blocked={provider.unavailable} range={ownerDates} />
           </Card>
         </section>
 

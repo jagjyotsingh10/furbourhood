@@ -5,6 +5,7 @@ import { CircleCheck, MapPin } from "lucide-react";
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
+import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { VerifiedBadge } from "@/components/Badges";
 import { ChoiceGroup, Field, FormError } from "@/components/Field";
 import { LevelBadge } from "@/components/LevelBadge";
@@ -17,7 +18,7 @@ import { requestBooking } from "@/data/api";
 import { usePets, useProvider } from "@/data/hooks";
 import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
 import { formatDateRange, formatPrice, plural, todayISO } from "@/lib/format";
-import { matchProvider } from "@/lib/match";
+import { blockedDuring, matchProvider } from "@/lib/match";
 import { bookingLength, estimatePrice, MAX_BOOKING_DAYS } from "@/lib/pricing";
 import { readSearch } from "@/lib/search";
 import { NotFound } from "@/screens/NotFound";
@@ -84,8 +85,11 @@ export function RequestBooking() {
   const match = pet && chosenService ? matchProvider(p, pet, chosenService) : null;
   const today = todayISO();
 
+  const clashes = blockedDuring(p, from, to);
   const dateError =
-    from < today
+    clashes.length > 0
+      ? `${p.name} isn't available on ${clashes.map((d) => formatDateRange(d, d)).join(", ")}. Choose other dates.`
+      : from < today
       ? "Choose a start date from today onwards."
       : to < from
         ? "The end date must be on or after the start date."
@@ -190,6 +194,11 @@ export function RequestBooking() {
                 <p className="text-xs text-destructive" role="alert">
                   {dateError}
                 </p>
+              )}
+              {p.unavailable.length > 0 && (
+                <div className="mt-2 border-t pt-3">
+                  <AvailabilityCalendar blocked={p.unavailable} range={to >= from ? { from, to } : undefined} />
+                </div>
               )}
             </Card>
 
