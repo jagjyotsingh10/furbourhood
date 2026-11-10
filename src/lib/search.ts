@@ -1,4 +1,5 @@
 import { SERVICES } from "@/lib/catalog";
+import { addDays, todayISO } from "@/lib/format";
 import type { ServiceId } from "@/types";
 
 /** A care search, kept in the URL so Results and Profile can share it. */
@@ -10,26 +11,25 @@ export interface CareSearch {
   to: string;
 }
 
-export const DEFAULT_SEARCH: CareSearch = {
-  service: "walking",
-  petId: "biscuit",
-  area: "N9A",
-  from: "2026-10-24",
-  to: "2026-10-26",
-};
+/** Defaults: no pet chosen yet (screens fall back to the first pet), dates a few days out. */
+export function defaultSearch(): CareSearch {
+  const today = todayISO();
+  return { service: "walking", petId: "", area: "N9A", from: addDays(today, 3), to: addDays(today, 5) };
+}
 
 function isService(value: string | null): value is ServiceId {
   return SERVICES.some((s) => s.id === value);
 }
 
 export function readSearch(params: URLSearchParams): CareSearch {
+  const fallback = defaultSearch();
   const service = params.get("service");
   return {
-    service: isService(service) ? service : DEFAULT_SEARCH.service,
-    petId: params.get("pet") ?? DEFAULT_SEARCH.petId,
-    area: params.get("area") ?? DEFAULT_SEARCH.area,
-    from: params.get("from") ?? DEFAULT_SEARCH.from,
-    to: params.get("to") ?? DEFAULT_SEARCH.to,
+    service: isService(service) ? service : fallback.service,
+    petId: params.get("pet") ?? fallback.petId,
+    area: params.get("area") ?? fallback.area,
+    from: params.get("from") ?? fallback.from,
+    to: params.get("to") ?? fallback.to,
   };
 }
 

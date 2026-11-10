@@ -1,33 +1,30 @@
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody } from "@/components/AppShell";
 import { BookingCard } from "@/components/BookingCard";
+import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DEMO_TODAY, bookings, getPet, getProvider } from "@/mocks";
-import type { Booking } from "@/types";
+import type { BookingDetails } from "@/data/api";
+import { useBookings } from "@/data/hooks";
+import { todayISO } from "@/lib/format";
 
-function BookingList({ items, empty }: { items: Booking[]; empty: string }) {
-  if (items.length === 0) {
-    return <p className="rounded-card bg-card p-6 text-center text-sm text-muted-foreground">{empty}</p>;
-  }
+function BookingList({ items, empty }: { items: BookingDetails[]; empty: string }) {
+  if (items.length === 0) return <EmptyState title={empty} />;
   return (
     <ul className="flex flex-col gap-3">
-      {items.map((booking) => {
-        const provider = getProvider(booking.providerId);
-        const pet = getPet(booking.petId);
-        if (!provider || !pet) return null;
-        return (
-          <li key={booking.id}>
-            <BookingCard booking={booking} provider={provider} pet={pet} />
-          </li>
-        );
-      })}
+      {items.map(({ booking, provider, pet }) => (
+        <li key={booking.id}>
+          <BookingCard booking={booking} provider={provider} pet={pet} />
+        </li>
+      ))}
     </ul>
   );
 }
 
 export function Bookings() {
-  const upcoming = bookings.filter((b) => b.end >= DEMO_TODAY).sort((a, b) => a.start.localeCompare(b.start));
-  const past = bookings.filter((b) => b.end < DEMO_TODAY).sort((a, b) => b.start.localeCompare(a.start));
+  const { data = [], loading, error, reload } = useBookings();
+  const today = todayISO();
+  const upcoming = data.filter((d) => d.booking.end >= today);
+  const past = data.filter((d) => d.booking.end < today).reverse();
 
   return (
     <>
@@ -38,14 +35,22 @@ export function Bookings() {
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>
           </TabsList>
-          <TabsContent value="upcoming">
-            <BookingList items={upcoming} empty="No upcoming bookings." />
-          </TabsContent>
-          <TabsContent value="past">
-            <BookingList items={past} empty="No past bookings yet." />
-          </TabsContent>
+          {loading ? (
+            <LoadingState label="Loading bookings…" />
+          ) : error ? (
+            <ErrorState message={error} onRetry={reload} />
+          ) : (
+            <>
+              <TabsContent value="upcoming">
+                <BookingList items={upcoming} empty="No upcoming bookings." />
+              </TabsContent>
+              <TabsContent value="past">
+                <BookingList items={past} empty="No past bookings yet." />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
-        <DemoNote />
+        <DemoNote>New accounts start with demo bookings.</DemoNote>
       </ScreenBody>
     </>
   );

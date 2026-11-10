@@ -1,24 +1,24 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { HandHeart, PawPrint, type LucideIcon } from "lucide-react";
 
+import { useAuth } from "@/auth/AuthProvider";
 import { PhoneFrame } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/types";
 
-type Role = "owner" | "provider";
-
-const ROLES: { id: Role; title: string; hint: string; icon: LucideIcon }[] = [
+const ROLES: { id: UserRole; title: string; hint: string; icon: LucideIcon }[] = [
   { id: "owner", title: "I'm a pet owner", hint: "Find trusted care nearby", icon: PawPrint },
   { id: "provider", title: "I'm a care provider", hint: "Offer walks, visits and stays", icon: HandHeart },
 ];
 
 export function Welcome() {
+  const { session } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<Role>("owner");
+  const [role, setRole] = useState<UserRole>("owner");
 
-  // Static MVP: both paths land on the owner home for now.
-  const start = () => navigate("/find");
+  if (session) return <Navigate to="/find" replace />;
 
   return (
     <PhoneFrame>
@@ -72,10 +72,10 @@ export function Welcome() {
         </fieldset>
 
         <div className="mt-6 grid gap-3">
-          <Button size="lg" onClick={start}>
+          <Button size="lg" onClick={() => navigate(`/signup?role=${role}`)}>
             Sign up
           </Button>
-          <Button size="lg" variant="outline" onClick={start}>
+          <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
             Log in
           </Button>
         </div>

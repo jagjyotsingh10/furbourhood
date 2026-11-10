@@ -3,7 +3,8 @@
 Local pet-care marketplace for Windsor-Essex, Ontario. University capstone MVP.
 A React web app that will later be packaged for Android with Capacitor.
 
-Current phase: design and app shell only. Static screens, mock data, no backend.
+Current phase: Supabase backend connected (email log-in, providers, pets, bookings). Next: Add pet,
+booking request flow, provider tools.
 
 ## Commands
 - `npm run dev` starts the dev server
@@ -17,9 +18,19 @@ Current phase: design and app shell only. Static screens, mock data, no backend.
 - Fonts via `@fontsource` (bundled, never a CDN, because the app must work offline in Android):
   Nunito 700/800 for headings (`font-heading`), Inter 400/500/600 for body (`font-sans`)
 - Import alias: `@/` = `src/`
+- Supabase (`@supabase/supabase-js`) for auth and Postgres. Settings in `.env.local` (git-ignored, see `.env.example`):
+  `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Only ever the publishable key; never the secret key.
+
+## Backend (Supabase)
+- Schema and security rules: `supabase/migrations/` (run in order in the Supabase SQL Editor). Demo providers: `supabase/seed.sql` (run after the migrations, before anyone signs up).
+- Every table has Row Level Security. Owners only see their own pets and bookings; providers only see bookings sent to their listing; listings and reviews are readable by any signed-in user. Any new table needs RLS and policies in its migration.
+- Schema changes go in a new numbered migration file; never edit one that has already been run.
+- A trigger on `auth.users` creates the `profiles` row (role and name come from sign-up metadata) and gives new owners demo pets and bookings (`is_demo = true`).
+- All reads go through `src/data/api.ts`, which maps snake_case rows onto the types in `src/types.ts`. Screens use the hooks in `src/data/hooks.ts` and show `LoadingState`, `ErrorState` and `EmptyState` (`src/components/States.tsx`). Screens never call `supabase` directly, except the auth calls in `Auth.tsx` and log-out in `Profile.tsx`.
+- `src/auth/`: `AuthProvider` (session) and `RequireAuth` (guards every tab screen; signed-out users go to `/login`).
 
 ## Out of scope
-Messaging, live GPS, iOS, real payments. Also not yet: Supabase, Stripe, Capacitor.
+Messaging, live GPS, iOS, real payments. Also not yet: Stripe, Capacitor.
 
 ## Brand
 | Token | Hex | Use |
@@ -64,11 +75,13 @@ Results rules:
 - Best match is ranked only by fit to the pet's needs, then verification and rating (`src/lib/match.ts`).
 - The coral "Featured" badge appears on All providers only, never on Best match.
 
-## Mock data
-`src/mocks/` holds 8 providers, 3 pets and 5 bookings in real Windsor-Essex areas
-(Windsor N9A, N8X, N9G; Tecumseh N8N; LaSalle N9J; Amherstburg N9V). All of it is fictional demo data,
-labelled as such in code and on screen (`DemoNote`). Replace with a backend later; keep the types in `src/types.ts`.
+## Demo data
+8 fictional providers in real Windsor-Essex areas (Windsor N9A, N8X, N9G; Tecumseh N8N; LaSalle N9J; Amherstburg N9V)
+live in `supabase/seed.sql`; new owners get 3 demo pets and 5 demo bookings from the sign-up trigger. It is all
+labelled as demo data in code, in the database (`is_demo`) and on screen (`DemoNote`).
+`src/mocks/` keeps a static copy used only by `/styleguide`.
 
 ## Routes
-`/` Welcome · `/find` Find care · `/results` Results · `/providers/:id` Provider profile ·
+`/` Welcome · `/signup?role=owner|provider` Sign up · `/login` Log in ·
+`/find` Find care · `/results` Results · `/providers/:id` Provider profile ·
 `/pets` My pets · `/bookings` Bookings · `/profile` Profile · `/styleguide` Style guide

@@ -1,4 +1,6 @@
-export type SkillLevel = "self-declared" | "verified" | "proven";
+export type UserRole = "owner" | "provider";
+
+export type SkillLevel ="self-declared" | "verified" | "proven";
 
 export type ServiceId = "walking" | "drop-in" | "sitting" | "boarding" | "daycare";
 

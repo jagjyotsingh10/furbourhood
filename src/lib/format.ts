@@ -11,6 +11,19 @@ function parse(iso: string): Date {
   return new Date(`${iso}T00:00:00Z`);
 }
 
+/** Today's date on the device, as yyyy-mm-dd */
+export function todayISO(): string {
+  const now = new Date();
+  const local = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return local.toISOString().slice(0, 10);
+}
+
+export function addDays(iso: string, days: number): string {
+  const date = parse(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 export function formatDate(iso: string): string {
   return longDate.format(parse(iso));
 }

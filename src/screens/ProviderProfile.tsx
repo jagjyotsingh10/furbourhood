@@ -11,14 +11,24 @@ import { Card } from "@/components/ui/card";
 import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
 import { formatDate, formatPrice, plural } from "@/lib/format";
 import { lowestRate } from "@/lib/match";
+import { ErrorState, LoadingState } from "@/components/States";
+import { useProvider } from "@/data/hooks";
 import { readSearch } from "@/lib/search";
-import { getProvider } from "@/mocks";
 import { NotFound } from "@/screens/NotFound";
 
 export function ProviderProfile() {
   const { id = "" } = useParams();
   const [params] = useSearchParams();
-  const provider = getProvider(id);
+  const { data: provider, loading, error, reload } = useProvider(id);
+
+  if (loading || error) {
+    return (
+      <>
+        <AppBar title="Provider" back />
+        <ScreenBody>{error ? <ErrorState message={error} onRetry={reload} /> : <LoadingState />}</ScreenBody>
+      </>
+    );
+  }
   if (!provider) return <NotFound />;
 
   const search = readSearch(params);
