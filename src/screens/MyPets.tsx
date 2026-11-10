@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 
 import { AppBar } from "@/components/AppBar";
@@ -27,14 +28,16 @@ export function MyPets() {
           <ul className="flex flex-col gap-3">
             {pets.map((pet) => (
               <li key={pet.id}>
-                <PetCard pet={pet} />
+                <PetCard pet={pet} editable />
               </li>
             ))}
           </ul>
         )}
-        <Button variant="outline" size="lg" className="border-dashed">
-          <Plus aria-hidden />
-          Add pet
+        <Button variant="outline" size="lg" className="border-dashed" asChild>
+          <Link to="/pets/new">
+            <Plus aria-hidden />
+            Add pet
+          </Link>
         </Button>
         <DemoNote>New accounts start with three demo pets.</DemoNote>
       </ScreenBody>

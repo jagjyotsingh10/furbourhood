@@ -9,6 +9,7 @@ import { Bookings } from "@/screens/Bookings";
 import { FindCare } from "@/screens/FindCare";
 import { MyPets } from "@/screens/MyPets";
 import { NotFound } from "@/screens/NotFound";
+import { AddPet, EditPet } from "@/screens/PetEditor";
 import { Profile } from "@/screens/Profile";
 import { ProviderProfile } from "@/screens/ProviderProfile";
 import { Results } from "@/screens/Results";
@@ -36,6 +37,8 @@ export default function App() {
               <Route path="/providers/:id" element={<ProviderProfile />} />
               <Route path="/bookings" element={<Bookings />} />
               <Route path="/pets" element={<MyPets />} />
+              <Route path="/pets/new" element={<AddPet />} />
+              <Route path="/pets/:id/edit" element={<EditPet />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/styleguide" element={<Styleguide />} />
               <Route path="*" element={<NotFound />} />

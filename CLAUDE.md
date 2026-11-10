@@ -3,7 +3,7 @@
 Local pet-care marketplace for Windsor-Essex, Ontario. University capstone MVP.
 A React web app that will later be packaged for Android with Capacitor.
 
-Current phase: Supabase backend connected (email log-in, providers, pets, bookings). Next: Add pet,
+Current phase: Supabase backend connected (email log-in, providers, pets, bookings) and pet management. Next:
 booking request flow, provider tools.
 
 ## Commands
@@ -57,7 +57,8 @@ Messaging, live GPS, iOS, real payments. Also not yet: Stripe, Capacitor.
 ## Component rules
 Screens in `src/screens/` only assemble components. Reusable UI lives in `src/components/`:
 - `AppBar`, `BottomTabs`, `AppShell` (`PhoneFrame`, `ScreenBody`, `SectionTitle`, `DemoNote`)
-- `ProviderCard`, `PetCard`, `BookingCard`, `ServiceTile`, `Avatar`
+- `ProviderCard`, `PetCard`, `BookingCard`, `ServiceTile`, `Avatar`, `PetForm`
+- Forms: `Field`, `FormError`, `ChoiceGroup` (`Field.tsx`) and `NeedPicker`. Choices are real radio buttons and checkboxes styled as tiles (selected = sky fill, navy text), so keyboards and screen readers work.
 - `LevelBadge`, `NeedChip`, `Badges` (`VerifiedBadge`, `FeaturedBadge`, `StatusChip`, `Rating`)
 
 Skill levels always render through `LevelBadge`, the same way everywhere:
@@ -84,4 +85,4 @@ labelled as demo data in code, in the database (`is_demo`) and on screen (`DemoN
 ## Routes
 `/` Welcome · `/signup?role=owner|provider` Sign up · `/login` Log in ·
 `/find` Find care · `/results` Results · `/providers/:id` Provider profile ·
-`/pets` My pets · `/bookings` Bookings · `/profile` Profile · `/styleguide` Style guide
+`/pets` My pets · `/pets/new` Add pet · `/pets/:id/edit` Edit pet · `/bookings` Bookings · `/profile` Profile · `/styleguide` Style guide

@@ -1,43 +1,19 @@
-import { useState, type ComponentProps, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { MailCheck } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
 import { PhoneFrame, ScreenBody } from "@/components/AppShell";
+import { Field, FormError } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/types";
 
 const MIN_PASSWORD = 8;
 
 const ROLE_LABEL: Record<UserRole, string> = { owner: "pet owner", provider: "care provider" };
-
-function Field({ id, label, hint, ...input }: { id: string; label: string; hint?: string } & ComponentProps<"input">) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} aria-describedby={hint ? `${id}-hint` : undefined} {...input} />
-      {hint && (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function FormError({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <p role="alert" className="rounded-control border border-destructive bg-card px-3 py-2 text-sm text-destructive">
-      {message}
-    </p>
-  );
-}
 
 export function SignUp() {
   const { session } = useAuth();

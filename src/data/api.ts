@@ -150,6 +150,57 @@ export async function fetchPets(): Promise<Pet[]> {
   return (data as unknown as PetRow[]).map(toPet);
 }
 
+export async function fetchPet(id: string): Promise<Pet | null> {
+  const { data, error } = await supabase.from("pets").select(PET_FIELDS).eq("id", id).maybeSingle();
+  if (error) fail(error.message);
+  return data ? toPet(data as unknown as PetRow) : null;
+}
+
+/** What the Add / Edit pet form saves. owner_id is filled in by the database (auth.uid()). */
+export type PetInput = Omit<Pet, "id">;
+
+function toPetRow(input: PetInput) {
+  return {
+    name: input.name,
+    species: input.species,
+    breed: input.breed,
+    age_years: input.ageYears,
+    weight_kg: input.weightKg,
+    tone: input.tone,
+    needs: input.needs,
+  };
+}
+
+export async function createPet(input: PetInput): Promise<Pet> {
+  const { data, error } = await supabase.from("pets").insert(toPetRow(input)).select(PET_FIELDS).single();
+  if (error) fail(error.message);
+  return toPet(data as unknown as PetRow);
+}
+
+export async function updatePet(id: string, input: PetInput): Promise<Pet> {
+  // A pet edited by its owner is no longer demo data.
+  const { data, error } = await supabase
+    .from("pets")
+    .update({ ...toPetRow(input), is_demo: false })
+    .eq("id", id)
+    .select(PET_FIELDS)
+    .single();
+  if (error) fail(error.message);
+  return toPet(data as unknown as PetRow);
+}
+
+/** Deleting a pet also deletes its bookings (on delete cascade). */
+export async function deletePet(id: string): Promise<void> {
+  const { error } = await supabase.from("pets").delete().eq("id", id);
+  if (error) fail(error.message);
+}
+
+export async function countPetBookings(id: string): Promise<number> {
+  const { count, error } = await supabase.from("bookings").select("id", { count: "exact", head: true }).eq("pet_id", id);
+  if (error) fail(error.message);
+  return count ?? 0;
+}
+
 export interface BookingDetails {
   booking: Booking;
   provider: Provider;

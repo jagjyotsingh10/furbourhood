@@ -74,6 +74,7 @@ Other scripts: `npm run typecheck` and `npm run build`.
 | `/results` | Best match / All providers |
 | `/providers/:id` | Provider profile with skills and rates |
 | `/pets` | My pets and their care needs |
+| `/pets/new`, `/pets/:id/edit` | Add, edit or delete a pet |
 | `/bookings` | Bookings: Requested → Accepted → Paid → Completed |
 | `/profile` | Profile |
 | `/styleguide` | Component style guide |
@@ -104,7 +105,7 @@ makes it safe for the app to ship the publishable key.
 
 - [x] Brand system, component library and all owner screens
 - [x] Supabase backend: auth, providers, pets, bookings
-- [ ] Add and edit pets
+- [x] Add, edit and delete pets
 - [ ] Booking request and acceptance flow
 - [ ] Stripe test-mode payments
 - [ ] Android build with Capacitor
