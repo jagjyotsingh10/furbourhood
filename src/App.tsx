@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LogIn, SignUp } from "@/screens/Auth";
 import { LeaveReview } from "@/screens/LeaveReview";
 import { Availability } from "@/screens/Availability";
+import { BookingUpdates } from "@/screens/BookingUpdates";
 import { Bookings } from "@/screens/Bookings";
 import { FindCare } from "@/screens/FindCare";
 import { MyListing } from "@/screens/MyListing";
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/providers/:id/request" element={<RequestBooking />} />
               <Route path="/bookings" element={<Bookings />} />
               <Route path="/bookings/:id/review" element={<LeaveReview />} />
+              <Route path="/bookings/:id/updates" element={<BookingUpdates />} />
               <Route path="/pets" element={<MyPets />} />
               <Route path="/pets/new" element={<AddPet />} />
               <Route path="/pets/:id/edit" element={<EditPet />} />

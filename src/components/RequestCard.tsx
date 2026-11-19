@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CalendarDays, CircleCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Camera, CalendarDays, CircleCheck } from "lucide-react";
 
 import { Avatar } from "@/components/Avatar";
 import { StatusChip } from "@/components/Badges";
@@ -19,6 +20,12 @@ interface RequestCardProps {
   listing: Provider;
   /** Called with the new status; the card shows its own busy and error states. */
   onAction?: (to: ProviderAction, from: BookingStatus[]) => Promise<void>;
+}
+
+/** Confirmed care happening today: the provider can send photo updates. */
+function isUnderWay(status: BookingStatus, start: string, end: string) {
+  const today = todayISO();
+  return (status === "accepted" || status === "paid") && start <= today && today <= end;
 }
 
 /** Accepted or paid care can be marked completed from its last day onwards. */
@@ -112,6 +119,20 @@ export function RequestCard({ request, listing, onAction }: RequestCardProps) {
             </div>
           )}
         </div>
+      )}
+
+      {["accepted", "paid", "completed"].includes(booking.status) && (
+        <Button
+          variant={isUnderWay(booking.status, booking.start, booking.end) ? "outline" : "ghost"}
+          size="sm"
+          className="mt-3 w-full"
+          asChild
+        >
+          <Link to={`/bookings/${booking.id}/updates`}>
+            <Camera aria-hidden />
+            {isUnderWay(booking.status, booking.start, booking.end) ? `Send ${pet.name}'s owner a photo` : "Photo updates"}
+          </Link>
+        </Button>
       )}
 
       {onAction && canComplete(booking.status, booking.end) && (

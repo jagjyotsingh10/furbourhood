@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { CreditCard, MailCheck, Star, X } from "lucide-react";
+import { Camera, CreditCard, MailCheck, Star, X } from "lucide-react";
 
 import { AppBar } from "@/components/AppBar";
 import { DemoNote, ScreenBody } from "@/components/AppShell";
@@ -88,6 +88,18 @@ function PayAction({ id, total }: { id: string; total: number }) {
   );
 }
 
+/** Confirmed and finished care has a photo feed from the provider. */
+function PhotoUpdatesLink({ id }: { id: string }) {
+  return (
+    <Button variant="ghost" size="sm" className="w-full" asChild>
+      <Link to={`/bookings/${id}/updates`}>
+        <Camera aria-hidden />
+        Photo updates
+      </Link>
+    </Button>
+  );
+}
+
 /** Completed care can be reviewed once; afterwards the card says so. */
 function ReviewAction({ id, reviewed }: { id: string; reviewed: boolean }) {
   if (reviewed) {
@@ -133,9 +145,17 @@ function BookingList({
               booking.status === "requested" ? (
                 <WithdrawRequest id={booking.id} onDone={onChanged} />
               ) : booking.status === "accepted" ? (
-                <PayAction id={booking.id} total={booking.total} />
+                <div className="flex flex-col gap-2">
+                  <PayAction id={booking.id} total={booking.total} />
+                  <PhotoUpdatesLink id={booking.id} />
+                </div>
+              ) : booking.status === "paid" ? (
+                <PhotoUpdatesLink id={booking.id} />
               ) : booking.status === "completed" ? (
-                <ReviewAction id={booking.id} reviewed={reviewed} />
+                <div className="flex flex-col gap-2">
+                  <ReviewAction id={booking.id} reviewed={reviewed} />
+                  <PhotoUpdatesLink id={booking.id} />
+                </div>
               ) : undefined
             }
           />

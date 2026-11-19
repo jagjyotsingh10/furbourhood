@@ -2,6 +2,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import {
   countPetBookings,
   fetchBookings,
+  fetchBookingSummary,
+  fetchBookingUpdates,
   fetchHostSpace,
   fetchMyListing,
   fetchPet,
@@ -47,3 +49,8 @@ export const useProviderRequests = (listingId: string) =>
 
 export const useHostSpace = (providerId: string, from: string, to: string) =>
   useQuery(useUserKey(`host-space:${providerId}:${from}:${to}`), () => fetchHostSpace(providerId, from, to));
+
+export const useBookingSummary = (id: string) =>
+  useQuery(useUserKey(`booking-summary:${id}`), () => fetchBookingSummary(id));
+export const useBookingUpdates = (id: string) =>
+  useQuery(useUserKey(`booking-updates:${id}`), () => fetchBookingUpdates(id));

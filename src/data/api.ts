@@ -538,3 +538,92 @@ export async function startCheckout(bookingId: string): Promise<string> {
 export async function confirmPayment(sessionId: string): Promise<void> {
   await callFunction<{ status: string }>("confirm-payment", { sessionId });
 }
+
+// ---------------------------------------------------------------------------
+// Photo updates during a booking (migration 0006)
+// ---------------------------------------------------------------------------
+const PHOTO_BUCKET = "booking-photos";
+
+export interface BookingUpdate {
+  id: string;
+  note: string;
+  createdAt: string;
+  /** Short-lived link to the private photo */
+  photoUrl: string | null;
+}
+
+export interface BookingSummary {
+  id: string;
+  service: ServiceId;
+  start: string;
+  end: string;
+  status: BookingStatus;
+  providerName: string;
+  petName: string;
+}
+
+/** The booking a photo feed belongs to. Readable only by its owner and its provider. */
+export async function fetchBookingSummary(id: string): Promise<BookingSummary | null> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id, service, start_date, end_date, status, providers(name), pets(name)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) fail(error.message);
+  if (!data) return null;
+  const row = data as unknown as {
+    id: string;
+    service: ServiceId;
+    start_date: string;
+    end_date: string;
+    status: BookingStatus;
+    providers: { name: string } | null;
+    pets: { name: string } | null;
+  };
+  return {
+    id: row.id,
+    service: row.service,
+    start: row.start_date,
+    end: row.end_date,
+    status: row.status,
+    providerName: row.providers?.name ?? "Provider",
+    petName: row.pets?.name ?? "your pet",
+  };
+}
+
+export async function fetchBookingUpdates(bookingId: string): Promise<BookingUpdate[]> {
+  const { data, error } = await supabase
+    .from("booking_updates")
+    .select("id, note, created_at, photo_path")
+    .eq("booking_id", bookingId)
+    .order("created_at", { ascending: false });
+  if (error) fail(error.message);
+  const rows = data as { id: string; note: string; created_at: string; photo_path: string }[];
+  if (rows.length === 0) return [];
+
+  // Photos are private: sign each one for an hour.
+  const { data: signed, error: signError } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrls(rows.map((r) => r.photo_path), 3600);
+  if (signError) fail(signError.message);
+  const urlFor = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+  return rows.map((r) => ({ id: r.id, note: r.note, createdAt: r.created_at, photoUrl: urlFor.get(r.photo_path) ?? null }));
+}
+
+/** Uploads a (shrunk) photo into the booking's folder, then records the update. */
+export async function postBookingUpdate(bookingId: string, photo: Blob, note: string): Promise<void> {
+  const path = `${bookingId}/${crypto.randomUUID()}.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .upload(path, photo, { contentType: "image/jpeg", upsert: false });
+  if (uploadError) {
+    fail(uploadError.message.includes("row-level security")
+      ? "You can send photo updates only during a confirmed booking, from its first day to its last."
+      : uploadError.message);
+  }
+  const { error } = await supabase.from("booking_updates").insert({ booking_id: bookingId, photo_path: path, note });
+  if (error) {
+    await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+    fail(error.message);
+  }
+}

@@ -143,7 +143,12 @@ makes it safe for the app to ship the publishable key.
 - [x] Host capacity limit (City of Windsor By-law 8156) and provider's own pets
 - [x] Area search within 15 km
 - [x] Stripe test-mode checkout (Edge Functions; deploy and add the test key to use it)
-- [ ] Android build with Capacitor
+- [ ] Stripe test mode live and test build hosted (by Nov 15)
+- [ ] Photo updates during a booking (Nov 16-17)
+- [ ] Certificate upload and verification checklist (Nov 18-19)
+- [ ] Platform dashboard with simulated data (Nov 20-21)
+- [ ] Android build with Capacitor (week of Nov 30)
+- Second release: partner listing page
 
 ## Notes
 
