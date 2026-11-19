@@ -35,7 +35,8 @@ export function json(req: Request, body: unknown, status = 200): Response {
 
 /** Stripe secret key, test mode only: a live key is refused so no real card is ever charged. */
 export function stripeKey(): string {
-  const key = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+  // Secret names are case-sensitive; the dashboard one was saved as Stripe_Secret_Key.
+  const key = Deno.env.get("STRIPE_SECRET_KEY") ?? Deno.env.get("Stripe_Secret_Key") ?? "";
   if (!key.startsWith("sk_test_")) throw new Error("Payments are set up for Stripe test mode only (a sk_test_ key).");
   return key;
 }
