@@ -739,8 +739,15 @@ export async function uploadCertificate(listingId: string, input: CertificateInp
 
 /** Removes a pending or declined certificate and its file. Approved ones stay on record. */
 export async function deleteCertificate(cert: Certificate): Promise<void> {
-  const { error } = await supabase.from("provider_certificates").delete().eq("id", cert.id).neq("status", "approved");
+  const { data, error } = await supabase
+    .from("provider_certificates")
+    .delete()
+    .eq("id", cert.id)
+    .neq("status", "approved")
+    .select("id");
   if (error) fail(error.message);
+  // Only remove the file once the record is really gone (an approved one is kept, file included).
+  if (!data || data.length === 0) fail("Approved certificates stay on your record and can't be removed.");
   await supabase.storage.from(CERT_BUCKET).remove([cert.filePath]);
 }
 
