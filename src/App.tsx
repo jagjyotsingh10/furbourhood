@@ -5,6 +5,7 @@ import { HomeRedirect } from "@/auth/HomeRedirect";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AdminDashboard, CertificateReview } from "@/screens/Admin";
 import { LogIn, SignUp } from "@/screens/Auth";
 import { LeaveReview } from "@/screens/LeaveReview";
 import { Availability } from "@/screens/Availability";
@@ -21,6 +22,7 @@ import { RequestBooking } from "@/screens/RequestBooking";
 import { Requests } from "@/screens/Requests";
 import { Results } from "@/screens/Results";
 import { Styleguide } from "@/screens/Styleguide";
+import { Verification } from "@/screens/Verification";
 import { Welcome } from "@/screens/Welcome";
 
 export default function App() {
@@ -40,9 +42,12 @@ export default function App() {
               }
             >
               <Route path="/home" element={<HomeRedirect />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/review" element={<CertificateReview />} />
               <Route path="/requests" element={<Requests />} />
               <Route path="/listing" element={<MyListing />} />
               <Route path="/listing/availability" element={<Availability />} />
+              <Route path="/listing/verification" element={<Verification />} />
               <Route path="/find" element={<FindCare />} />
               <Route path="/results" element={<Results />} />
               <Route path="/providers/:id" element={<ProviderProfile />} />

@@ -11,11 +11,20 @@ interface AuthState {
   profile: Profile | null;
   /** Owner or provider. Null while signed out or still loading. */
   role: UserRole | null;
+  /** Furbourhood staff: sees the platform dashboard and reviews certificates */
+  isAdmin: boolean;
   /** True until the saved session (and its profile, if any) has been read */
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthState>({ session: null, user: null, profile: null, role: null, loading: true });
+const AuthContext = createContext<AuthState>({
+  session: null,
+  user: null,
+  profile: null,
+  role: null,
+  isAdmin: false,
+  loading: true,
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -61,7 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, role: profile?.role ?? null, loading }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        role: profile?.role ?? null,
+        isAdmin: profile?.isAdmin ?? false,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -72,7 +88,8 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-/** Where a signed-in user lands: providers on their requests, owners on Find care. */
-export function homeFor(role: UserRole | null): string {
+/** Where a signed-in user lands: staff on the dashboard, providers on their requests, owners on Find care. */
+export function homeFor(role: UserRole | null, isAdmin = false): string {
+  if (isAdmin) return "/admin";
   return role === "provider" ? "/requests" : "/find";
 }

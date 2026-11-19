@@ -8,6 +8,7 @@ import { Avatar } from "@/components/Avatar";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { HostCapacity } from "@/components/HostCapacity";
 import { Rating, VerifiedBadge } from "@/components/Badges";
+import { CheckedCertificates } from "@/components/Certificates";
 import { LevelBadge } from "@/components/LevelBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import { NEED_LABELS, serviceInfo } from "@/lib/catalog";
 import { formatDate, formatDateRange, formatPrice, plural } from "@/lib/format";
 import { blockedDuring, lowestRate } from "@/lib/match";
 import { ErrorState, LoadingState } from "@/components/States";
-import { useHostSpace, useProvider } from "@/data/hooks";
+import { useApprovedCertificates, useHostSpace, useProvider } from "@/data/hooks";
 import { readSearch, toQuery } from "@/lib/search";
 import { NotFound } from "@/screens/NotFound";
 
@@ -27,6 +28,7 @@ export function ProviderProfile() {
   // Hooks run before any early return; the space query only matters when the owner searched for dates.
   const searched = readSearch(params);
   const space = useHostSpace(id, searched.from, searched.to);
+  const certificates = useApprovedCertificates(id);
 
   if (loading || error) {
     return (
@@ -96,6 +98,15 @@ export function ProviderProfile() {
           </Card>
           <p className="text-xs text-muted-foreground">Tap a badge to see what each level means.</p>
         </section>
+
+        {(certificates.data?.length ?? 0) > 0 && (
+          <section className="flex flex-col gap-2">
+            <SectionTitle>Certificates checked by Furbourhood</SectionTitle>
+            <Card className="p-4">
+              <CheckedCertificates certificates={certificates.data ?? []} />
+            </Card>
+          </section>
+        )}
 
         <section className="flex flex-col gap-2">
           <SectionTitle>Services and rates</SectionTitle>

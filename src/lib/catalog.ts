@@ -40,7 +40,7 @@ export const LEVEL_LABELS: Record<SkillLevel, string> = {
 
 export const LEVEL_DESCRIPTIONS: Record<SkillLevel, string> = {
   "self-declared": "Listed by the provider, not yet checked",
-  verified: "Checked by Furbourhood in person",
+  verified: "Checked by Furbourhood (certificate or in person)",
   proven: "Confirmed by 3+ owners",
 };
 

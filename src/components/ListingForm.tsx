@@ -260,7 +260,7 @@ export function ListingForm({ initial, currentSkills, submitLabel, onSubmit }: L
           value={needs}
           onChange={setNeeds}
           legend="Skills"
-          hint="New skills start as Self-declared. Furbourhood verifies skills in person, and owners confirm them after bookings."
+          hint="New skills start as Self-declared. Upload a certificate in Verification to get one Verified; owners confirm skills after bookings."
         />
         {ranked.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

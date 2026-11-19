@@ -1,5 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
-import { CalendarDays, ClipboardList, Inbox, PawPrint, Search, UserRound, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  ChartColumn,
+  ClipboardList,
+  FileCheck,
+  Inbox,
+  PawPrint,
+  Search,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -25,10 +35,17 @@ const PROVIDER_TABS: Tab[] = [
   { to: "/profile", label: "Profile", icon: UserRound, match: ["/profile", "/styleguide"] },
 ];
 
+// Furbourhood staff. Their own owner or provider screens stay reachable by URL.
+const ADMIN_TABS: Tab[] = [
+  { to: "/admin", label: "Dashboard", icon: ChartColumn, match: ["/admin"] },
+  { to: "/review", label: "Certificates", icon: FileCheck, match: ["/review"] },
+  { to: "/profile", label: "Profile", icon: UserRound, match: ["/profile", "/styleguide"] },
+];
+
 export function BottomTabs() {
   const { pathname } = useLocation();
-  const { role } = useAuth();
-  const tabs = role === "provider" ? PROVIDER_TABS : OWNER_TABS;
+  const { role, isAdmin } = useAuth();
+  const tabs = isAdmin ? ADMIN_TABS : role === "provider" ? PROVIDER_TABS : OWNER_TABS;
 
   return (
     <nav

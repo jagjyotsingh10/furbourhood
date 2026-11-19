@@ -297,6 +297,8 @@ export interface Profile {
   role: UserRole;
   fullName: string;
   areaFsa: string | null;
+  /** Furbourhood staff (listed in platform_admins). Set by the database, never by sign-up. */
+  isAdmin: boolean;
 }
 
 /** Always filter by id: providers can also see the profiles of owners who sent them requests. */
@@ -309,7 +311,9 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
   if (error) fail(error.message);
   if (!data) return null;
   const row = data as ProfileRow;
-  return { id: row.id, role: row.role, fullName: row.full_name, areaFsa: row.area_fsa };
+  // Before migration 0008 the function doesn't exist; treat that as "not an admin".
+  const { data: admin } = await supabase.rpc("is_admin");
+  return { id: row.id, role: row.role, fullName: row.full_name, areaFsa: row.area_fsa, isAdmin: admin === true };
 }
 
 // ---------------------------------------------------------------------------
@@ -626,4 +630,224 @@ export async function postBookingUpdate(bookingId: string, photo: Blob, note: st
     await supabase.storage.from(PHOTO_BUCKET).remove([path]);
     fail(error.message);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Certificates: providers upload proof of a skill; Furbourhood approves it and the skill becomes Verified.
+// ---------------------------------------------------------------------------
+const CERT_BUCKET = "provider-certificates";
+
+export type CertificateStatus = "pending" | "approved" | "rejected";
+
+export interface Certificate {
+  id: string;
+  need: CareNeed;
+  title: string;
+  issuer: string;
+  status: CertificateStatus;
+  reviewNote: string;
+  createdAt: string;
+  filePath: string;
+}
+
+interface CertificateRow {
+  id: string;
+  need: CareNeed;
+  title: string;
+  issuer: string;
+  status: CertificateStatus;
+  review_note: string;
+  created_at: string;
+  file_path: string;
+}
+
+const CERT_FIELDS = "id, need, title, issuer, status, review_note, created_at, file_path";
+
+function toCertificate(row: CertificateRow): Certificate {
+  return {
+    id: row.id,
+    need: row.need,
+    title: row.title,
+    issuer: row.issuer,
+    status: row.status,
+    reviewNote: row.review_note,
+    createdAt: row.created_at,
+    filePath: row.file_path,
+  };
+}
+
+/** Every certificate on the signed-in provider's own listing, newest first. */
+export async function fetchMyCertificates(listingId: string): Promise<Certificate[]> {
+  const { data, error } = await supabase
+    .from("provider_certificates")
+    .select(CERT_FIELDS)
+    .eq("provider_id", listingId)
+    .order("created_at", { ascending: false });
+  if (error) fail(error.message);
+  return (data as CertificateRow[]).map(toCertificate);
+}
+
+/** Approved certificates on any listing (what owners see on a profile). */
+export async function fetchApprovedCertificates(providerId: string): Promise<Certificate[]> {
+  const { data, error } = await supabase
+    .from("provider_certificates")
+    .select(CERT_FIELDS)
+    .eq("provider_id", providerId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  if (error) fail(error.message);
+  return (data as CertificateRow[]).map(toCertificate);
+}
+
+export interface CertificateInput {
+  need: CareNeed;
+  title: string;
+  issuer: string;
+  file: File;
+}
+
+const CERT_TYPES: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+export const CERT_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Uploads the file into the listing's folder, then records the certificate (always pending). */
+export async function uploadCertificate(listingId: string, input: CertificateInput): Promise<void> {
+  const ext = CERT_TYPES[input.file.type];
+  if (!ext) fail("Upload a PDF or a photo (JPEG, PNG or WebP).");
+  if (input.file.size > CERT_MAX_BYTES) fail("That file is over 10 MB. Try a smaller scan or photo.");
+  const path = `${listingId}/${crypto.randomUUID()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from(CERT_BUCKET)
+    .upload(path, input.file, { contentType: input.file.type, upsert: false });
+  if (uploadError) fail(uploadError.message);
+  const { error } = await supabase.from("provider_certificates").insert({
+    provider_id: listingId,
+    need: input.need,
+    title: input.title,
+    issuer: input.issuer,
+    file_path: path,
+  });
+  if (error) {
+    await supabase.storage.from(CERT_BUCKET).remove([path]);
+    fail(error.message);
+  }
+}
+
+/** Removes a pending or declined certificate and its file. Approved ones stay on record. */
+export async function deleteCertificate(cert: Certificate): Promise<void> {
+  const { error } = await supabase.from("provider_certificates").delete().eq("id", cert.id).neq("status", "approved");
+  if (error) fail(error.message);
+  await supabase.storage.from(CERT_BUCKET).remove([cert.filePath]);
+}
+
+/** A private link to the provider's own file, valid for 10 minutes. */
+export async function certificateFileUrl(cert: Certificate): Promise<string> {
+  const { data, error } = await supabase.storage.from(CERT_BUCKET).createSignedUrl(cert.filePath, 600);
+  if (error || !data) fail(error?.message ?? "Couldn't open the file.");
+  return data.signedUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Platform dashboard (Furbourhood staff only; the database refuses everyone else)
+// ---------------------------------------------------------------------------
+export interface PlatformStats {
+  owners: number;
+  providers: number;
+  providersVerifiedInPerson: number;
+  pets: number;
+  bookings: number;
+  bookingValue: number;
+  reviews: number;
+  averageRating: number;
+  certificatesPending: number;
+  /** Percentage of bookings that are demo data */
+  demoShare: number;
+  byStatus: Partial<Record<BookingStatus, number>>;
+  byService: Partial<Record<ServiceId, number>>;
+  byArea: Record<string, number>;
+  byLevel: Partial<Record<SkillLevel, number>>;
+}
+
+interface PlatformStatsRow {
+  owners: number;
+  providers: number;
+  providers_verified_in_person: number;
+  pets: number;
+  bookings: number;
+  booking_value: number | string;
+  reviews: number;
+  average_rating: number | string;
+  certificates_pending: number;
+  demo_share: number | string;
+  by_status: Partial<Record<BookingStatus, number>>;
+  by_service: Partial<Record<ServiceId, number>>;
+  by_area: Record<string, number>;
+  by_level: Partial<Record<SkillLevel, number>>;
+}
+
+export async function fetchPlatformStats(): Promise<PlatformStats> {
+  const { data, error } = await supabase.rpc("platform_stats");
+  if (error) fail(error.message);
+  const row = data as PlatformStatsRow;
+  return {
+    owners: row.owners,
+    providers: row.providers,
+    providersVerifiedInPerson: row.providers_verified_in_person,
+    pets: row.pets,
+    bookings: row.bookings,
+    bookingValue: Number(row.booking_value),
+    reviews: row.reviews,
+    averageRating: Number(row.average_rating),
+    certificatesPending: row.certificates_pending,
+    demoShare: Number(row.demo_share),
+    byStatus: row.by_status,
+    byService: row.by_service,
+    byArea: row.by_area,
+    byLevel: row.by_level,
+  };
+}
+
+export interface CertificateForReview extends Certificate {
+  providerId: string;
+  providerName: string;
+  /** The skill's current level on that listing (null if the provider has since removed the skill) */
+  currentLevel: SkillLevel | null;
+}
+
+/** Every certificate, pending first then newest. Only admins get rows for other listings. */
+export async function fetchCertificateQueue(): Promise<CertificateForReview[]> {
+  const { data, error } = await supabase
+    .from("provider_certificates")
+    .select(`${CERT_FIELDS}, provider_id, providers(name, provider_skills(need, level))`)
+    .order("created_at", { ascending: false });
+  if (error) fail(error.message);
+  type Row = CertificateRow & {
+    provider_id: string;
+    providers: { name: string; provider_skills: { need: CareNeed; level: SkillLevel }[] } | null;
+  };
+  const rank: Record<CertificateStatus, number> = { pending: 0, rejected: 1, approved: 2 };
+  return (data as unknown as Row[])
+    .map((r) => ({
+      ...toCertificate(r),
+      providerId: r.provider_id,
+      providerName: r.providers?.name ?? "Unknown provider",
+      currentLevel: r.providers?.provider_skills.find((s) => s.need === r.need)?.level ?? null,
+    }))
+    .sort((a, b) => rank[a.status] - rank[b.status]);
+}
+
+/** Approve or decline. Approval makes the skill Verified (apply_certificate in 0007). */
+export async function reviewCertificate(id: string, status: "approved" | "rejected", note: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("provider_certificates")
+    .update({ status, review_note: note })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+  if (error) fail(error.message);
+  if (!data || data.length === 0) fail("That certificate was already reviewed, or you're not signed in as Furbourhood staff.");
 }

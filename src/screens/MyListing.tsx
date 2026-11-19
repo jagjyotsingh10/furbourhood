@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarX2, ChevronRight, CircleCheck, Eye } from "lucide-react";
+import { CalendarX2, ChevronRight, CircleCheck, Eye, ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AppBar } from "@/components/AppBar";
@@ -110,6 +110,28 @@ export function MyListing() {
                     {listing.unavailable.length === 0
                       ? "You're shown as available every day"
                       : `${plural(listing.unavailable.length, "date")} blocked`}
+                  </span>
+                </span>
+                <ChevronRight className="size-4" aria-hidden />
+              </Link>
+            )}
+            {listing && (
+              <Link
+                to="/listing/verification"
+                className="flex items-center gap-3 rounded-card bg-card p-4 shadow-card hover:bg-sky-tint/50"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-tint">
+                  <ShieldCheck className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Verification</span>
+                  <span className="block text-sm text-muted-foreground">
+                    {(() => {
+                      const checked = listing.skills.filter((s) => s.level !== "self-declared").length;
+                      return checked === 0
+                        ? "Upload certificates to get your skills Verified"
+                        : `${checked} of ${plural(listing.skills.length, "skill")} Verified or Proven`;
+                    })()}
                   </span>
                 </span>
                 <ChevronRight className="size-4" aria-hidden />

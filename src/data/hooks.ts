@@ -1,7 +1,11 @@
 import { useAuth } from "@/auth/AuthProvider";
 import {
   countPetBookings,
+  fetchApprovedCertificates,
+  fetchMyCertificates,
   fetchBookings,
+  fetchCertificateQueue,
+  fetchPlatformStats,
   fetchBookingSummary,
   fetchBookingUpdates,
   fetchHostSpace,
@@ -54,3 +58,11 @@ export const useBookingSummary = (id: string) =>
   useQuery(useUserKey(`booking-summary:${id}`), () => fetchBookingSummary(id));
 export const useBookingUpdates = (id: string) =>
   useQuery(useUserKey(`booking-updates:${id}`), () => fetchBookingUpdates(id));
+
+export const useMyCertificates = (listingId: string) =>
+  useQuery(useUserKey(`certificates:${listingId}`), () => fetchMyCertificates(listingId));
+export const useApprovedCertificates = (providerId: string) =>
+  useQuery(useUserKey(`approved-certificates:${providerId}`), () => fetchApprovedCertificates(providerId));
+
+export const usePlatformStats = () => useQuery(useUserKey("platform-stats"), fetchPlatformStats);
+export const useCertificateQueue = () => useQuery(useUserKey("certificate-queue"), fetchCertificateQueue);
