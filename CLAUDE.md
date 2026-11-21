@@ -1,7 +1,7 @@
 # Furbourhood
 
 Local pet-care marketplace for Windsor-Essex, Ontario. University capstone MVP.
-A React web app that will later be packaged for Android with Capacitor.
+A React web app, also packaged for Android with Capacitor 7 (`android/`, app id `ca.furbourhood.app`).
 
 Current phase: Supabase backend, pet management, booking requests, provider tools, availability, reviews with
 Proven skills, the by-law capacity limit, area search, Stripe test-mode checkout (deployed), photo updates, certificate upload and the staff dashboard. Next: fixes, usability test, then the Android build.
@@ -10,6 +10,7 @@ Proven skills, the by-law capacity limit, area search, Stripe test-mode checkout
 - `npm run dev` starts the dev server
 - `npm run typecheck` runs TypeScript (strict)
 - `npm run build` type-checks and builds
+- `npm run android:sync` builds and copies the web app into the Android project (`android/`); then `cd android && gradlew assembleDebug` (JAVA_HOME = Android Studio's `jbr`, Java 21) or `npm run android:open`
 
 ## Stack
 - Vite + React + TypeScript (strict, `noUncheckedIndexedAccess`)
@@ -37,12 +38,13 @@ Proven skills, the by-law capacity limit, area search, Stripe test-mode checkout
 - Certificates live in `0007_certificates.sql`: private bucket `provider-certificates` (one folder per listing), table `provider_certificates`. Uploads are always `pending`; providers can't update them. Furbourhood approves in the SQL Editor (later the platform dashboard), and `apply_certificate()` then raises that skill to Verified (never lowers Proven). Approved certificates (title, issuer, skill; never the file) are readable by any signed-in user.
 - Platform staff live in `0008_platform_dashboard.sql`: table `platform_admins` (RLS on, no policies, so the API can't read or write it; add staff in the SQL Editor). It is deliberately not a profile role, so sign-up metadata can never make an admin. `is_admin()` gates `platform_stats()` (one JSON call for the dashboard) and lets staff read every certificate and file and change only its status and note (`guard_certificate_review`). The app reads it as `isAdmin` in `useAuth()`; staff get Dashboard · Certificates · Profile tabs and land on `/admin`.
 - Dates follow Windsor time: every date rule in the database uses `local_today()` (`0009_local_dates.sql`, America/Toronto), never `current_date` (UTC, a day ahead after about 7 p.m.). The app's `todayISO()` uses the device date, which matches.
+- Android: `capacitor.config.json` (JSON, because the CLI can't load a TS config with this TypeScript). The WebView serves the app from `https://localhost`, so that origin must be in the payment functions' `ALLOWED_ORIGINS`; Stripe checkout opens inside the app (`allowNavigation`) so its success URL returns to the app. Icons and splash screens in `android/app/src/main/res` are generated from the brand mark.
 - Area search keeps providers within `SEARCH_RADIUS_KM` (15 km) of the owner's area using `AREA_CENTRES`, which are approximate points, not survey data.
 - Availability and status steps live in `0004_availability_and_completion.sql`. Providers block dates in `provider_unavailable_dates`; a trigger rejects requests that include a blocked date, and search, profile and Request booking hide or flag clashes (`blockedDuring` in `src/lib/match.ts`). `guard_booking_update()` is the single rulebook for status changes by signed-in users: requested → accepted or declined, accepted or paid → completed (from the last day onwards). Everything else is refused, including accepted → paid, so Stripe must set Paid from a server-side function (service role), never from the app.
 - `src/auth/`: `AuthProvider` (session, profile and role), `RequireAuth` (guards every tab screen; signed-out users go to `/login`) and `HomeRedirect` (`/home` sends providers to `/requests`, owners to `/find`).
 
 ## Out of scope
-Messaging, live GPS, iOS, real payments (Stripe is test mode only). Also not yet: Capacitor.
+Messaging, live GPS, iOS, real payments (Stripe is test mode only). Also not yet: a signed release build for Google Play.
 
 ## Brand
 | Token | Hex | Use |

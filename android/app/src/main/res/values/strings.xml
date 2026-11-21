@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Furbourhood</string>
+    <string name="title_activity_main">Furbourhood</string>
+    <string name="package_name">ca.furbourhood.app</string>
+    <string name="custom_url_scheme">ca.furbourhood.app</string>
+</resources>

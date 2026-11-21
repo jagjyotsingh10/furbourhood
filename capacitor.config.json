@@ -1,0 +1,12 @@
+{
+  "appId": "ca.furbourhood.app",
+  "appName": "Furbourhood",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["checkout.stripe.com"]
+  },
+  "android": {
+    "backgroundColor": "#F7FBFF"
+  }
+}

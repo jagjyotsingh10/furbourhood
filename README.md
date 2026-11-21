@@ -147,7 +147,8 @@ makes it safe for the app to ship the publishable key.
 - [x] Photo updates during a booking
 - [x] Certificate upload and verification checklist
 - [x] Platform dashboard (staff only) with certificate review
-- [ ] Android build with Capacitor (week of Nov 30)
+- [x] Android debug build with Capacitor (runs on the emulator)
+- [ ] Signed Android release build and phone test (week of Nov 30)
 - Second release: partner listing page
 
 ## Notes
